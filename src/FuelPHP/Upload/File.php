@@ -1,0 +1,523 @@
+<?php
+/**
+ * Part of the Fuel framework.
+ *
+ * @package    FuelPHP
+ * @version    2.0
+ * @author     Fuel Development Team
+ * @license    MIT License
+ * @copyright  2010 - 2013 Fuel Development Team
+ * @link       http://fuelphp.com
+ */
+
+namespace FuelPHP\Upload;
+
+/**
+ * Files is a container for a single uploaded file
+ */
+class File
+{
+	/**
+	 * Our custom error code constants
+	 */
+	const UPLOAD_ERR_MAX_SIZE             = 101;
+	const UPLOAD_ERR_EXT_BLACKLISTED      = 102;
+	const UPLOAD_ERR_EXT_NOT_WHITELISTED  = 103;
+	const UPLOAD_ERR_TYPE_BLACKLISTED     = 104;
+	const UPLOAD_ERR_TYPE_NOT_WHITELISTED = 105;
+	const UPLOAD_ERR_MIME_BLACKLISTED     = 106;
+	const UPLOAD_ERR_MIME_NOT_WHITELISTED = 107;
+	const UPLOAD_ERR_MAX_FILENAME_LENGTH  = 108;
+	const UPLOAD_ERR_MOVE_FAILED          = 109;
+	const UPLOAD_ERR_DUPLICATE_FILE       = 110;
+	const UPLOAD_ERR_MKDIR_FAILED         = 111;
+	const UPLOAD_ERR_FTP_FAILED           = 112;
+
+	/**
+	 * @var  array  Container for uploaded file objects
+	 */
+	protected $container = array();
+
+	/**
+	 * @var  array  Container for validation errors
+	 */
+	protected $errors = array();
+
+	/**
+	 * @var  array  Configuration values
+	 */
+	protected $config = array(
+		// validation settings
+		'max_size'        => 0,
+		'max_length'      => 0,
+		'ext_whitelist'   => array(),
+		'ext_blacklist'   => array(),
+		'type_whitelist'  => array(),
+		'type_blacklist'  => array(),
+		'mime_whitelist'  => array(),
+		'mime_blacklist'  => array(),
+		// file settings
+		'prefix'          => '',
+		'suffix'          => '',
+		'extension'       => '',
+		'randomize'       => false,
+		'normalize'       => false,
+		'normalize_separator' => '_',
+		'change_case'     => false,
+		// save-to-disk settings
+		'path'            => '',
+		'create_path'     => true,
+		'path_chmod'      => 0777,
+		'file_chmod'      => 0666,
+		'auto_rename'     => true,
+		'overwrite'       => false,
+		// save-to-ftp settings
+		'ftp_mode'        => 'auto',
+		'ftp_permissions' => null
+	);
+
+	/**
+	 * @var  bool  Flag to indicate if validation has run on this object
+	 */
+	protected $isValidated = false;
+
+	/**
+	 * @var  bool  Flag to indicate the result of the validation run
+	 */
+	protected $isValid = false;
+
+	/**
+	 * @var  array  Container for callbacks
+	 */
+	protected $callbacks = array();
+
+	/**
+	 * @var  mixed  FuelPHP FTP instance, for saving files to an FTP server
+	 */
+	protected $ftpInstance = null;
+
+	/**
+	 * Constructor
+	 *
+	 * @param  array  $file  Array with unified information about the file uploaded
+	 */
+	public function __construct(array $file, &$callbacks = array(), &$ftpInstance = null)
+	{
+		// store the file data for this file
+		$this->container = $file;
+
+		// the callbacks reference
+		$this->callbacks =& $callbacks;
+
+		// and the callbacks reference
+		$this->ftpInstance =& $ftpInstance;
+	}
+
+	/**
+	 * Magic getter, gives read access to all elements in the file container
+	 *
+	 * @param  string  $name  name of the container item to get
+	 *
+	 * @return  mixed  value of the item, or null if the item does not exist
+	 */
+	public function __get($name)
+	{
+		$name = strtolower($name);
+		return isset($this->container[$name]) ? $this->container[$name] : null;
+	}
+
+	/**
+	 * Magic setter, gives write access to all elements in the file container
+	 *
+	 * @param  string  $name  name of the container item to set
+	 * @param  mixed  $value  value to set it to
+	 */
+	public function __set($name, $value)
+	{
+		$name = strtolower($name);
+		isset($this->container[$name]) and $this->container[$name] = $value;
+	}
+
+	/**
+	 * Return the validation state of this object
+	 *
+	 * @return  bool
+	 */
+	public function isValidated()
+	{
+		return $this->isValidated;
+	}
+
+	/**
+	 * Return the state of this object
+	 *
+	 * @return  bool
+	 */
+	public function isValid()
+	{
+		return $this->isValid;
+	}
+
+	/**
+	 * Return the error objects collected for this file upload
+	 *
+	 * @return  array
+	 */
+	public function getErrors()
+	{
+		return $this->isValidated ? $this->errors : array();
+	}
+
+	/**
+	 * Set the configuration for this file
+	 *
+	 * @param  $name  string|array  name of the configuration item to set, or an array of configuration items
+	 * @param  $value mixed  if $name is an item name, this holds the configuration values for that item
+	 *
+	 * @return  void
+	 */
+	public function setConfig($item, $value = null)
+	{
+		// unify the parameters
+		is_array($item) or $item = array($item => $value);
+
+		// update the configuration
+		foreach ($item as $name => $value)
+		{
+			array_key_exists($name, $this->config) and $this->config[$name] = $value;
+		}
+	}
+
+	/**
+	 * Run validation on the uploaded file, based on the config being loaded
+	 *
+	 * @return  bool
+	 */
+	public function validate()
+	{
+		// reset the error container
+		$this->errors = array();
+
+		// validation starts, call the pre-validation callback
+		$this->runCallbacks('before_validation');
+
+		// was the upload of the file a success?
+		if ($this->container['error'] == 0)
+		{
+			// add some filename details (pathinfo can't be trusted with utf-8 filenames!)
+			$this->container['extension'] = ltrim(strrchr(ltrim($this->container['name'], '.'), '.'),'.');
+			if (empty($this->container['extension']))
+			{
+				$this->container['filename'] = $this->container['name'];
+			}
+			else
+			{
+				$this->container['filename'] = substr($this->container['name'], 0, strlen($this->container['name'])-(strlen($this->container['extension'])+1));
+			}
+
+			// does this upload exceed the maximum size?
+			if ( ! empty($this->config['max_size']) and is_numeric($this->config['max_size']) and $this->container['size'] > $this->config['max_size'])
+			{
+				$this->errors[] = new FileError(static::UPLOAD_ERR_MAX_SIZE);
+			}
+
+			// add mimetype information
+			try
+			{
+				$handle = finfo_open(FILEINFO_MIME_TYPE);
+				$this->container['mimetype'] = finfo_file($handle, $this->container['tmp_name']);
+				finfo_close($handle);
+			}
+			// this will only work if PHP errors are converted into ErrorException (like when you use FuelPHP)
+			catch (\ErrorException $e)
+			{
+				$this->container['mimetype'] = false;
+				$this->errors[] = new FileError(UPLOAD_ERR_NO_FILE);
+			}
+
+			// always use the more specific of the mime types available
+			if ($this->container['mimetype'] == 'application/octet-stream' and $this->container['type'] != $this->container['mimetype'])
+			{
+				$this->container['mimetype'] = $this->container['type'];
+			}
+
+			// make sure it contains something valid
+			if (empty($this->container['mimetype']) or strpos($this->container['mimetype'], '/') === false)
+			{
+				$this->container['mimetype'] = 'application/octet-stream';
+			}
+
+			// split the mimetype info so we can run some tests
+			preg_match('|^(.*)/(.*)|', $this->container['mimetype'], $mimeinfo);
+
+			// check the file extension black- and whitelists
+			if (in_array(strtolower($this->container['extension']), (array) $this->config['ext_blacklist']))
+			{
+				$this->errors[] = new FileError(static::UPLOAD_ERR_EXT_BLACKLISTED);
+			}
+			elseif ( ! empty($this->config['ext_whitelist']) and ! in_array(strtolower($this->container['extension']), (array) $this->config['ext_whitelist']))
+			{
+				$this->errors[] = new FileError(static::UPLOAD_ERR_EXT_NOT_WHITELISTED);
+			}
+
+			// check the file type black- and whitelists
+			if (in_array($mimeinfo[1], (array) $this->config['type_blacklist']))
+			{
+				$this->errors[] = new FileError(static::UPLOAD_ERR_TYPE_BLACKLISTED);
+			}
+			if ( ! empty($this->config['type_whitelist']) and ! in_array($mimeinfo[1], (array) $this->config['type_whitelist']))
+			{
+				$this->errors[] = new FileError(static::UPLOAD_ERR_TYPE_NOT_WHITELISTED);
+			}
+
+			// check the file mimetype black- and whitelists
+			if (in_array($this->container['mimetype'], (array) $this->config['mime_blacklist']))
+			{
+				$this->errors[] = new FileError(static::UPLOAD_ERR_MIME_BLACKLISTED);
+			}
+			elseif ( ! empty($this->config['mime_whitelist']) and ! in_array($this->container['mimetype'], (array) $this->config['mime_whitelist']))
+			{
+				$this->errors[] = new FileError(static::UPLOAD_ERR_MIME_NOT_WHITELISTED);
+			}
+
+			// validation finished, call the post-validation callback
+			$this->runCallbacks('after_validation');
+		}
+		else
+		{
+			// upload was already a failure, store the corresponding error
+			$this->errors[] = new FileError($this->container['error']);
+
+			// and mark this validation a failure
+			$this->isValid = false;
+		}
+
+		// set the flag to indicate we ran the validation
+		$this->isValidated = true;
+
+		// return the validation state
+		return $this->isValid;
+	}
+
+	/**
+	 * Save the uploaded file
+	 *
+	 * @return  bool
+	 */
+	public function save()
+	{
+		// we can only save files marked as valid
+		if ($this->isValid)
+		{
+			// make sure we have a valid path
+			if (empty($this->config['path']))
+			{
+				$this->container['path'] = rtrim($this->config['path'], DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+			}
+			if ( ! is_dir($this->container['path']) and (bool) $this->config['create_path'])
+			{
+				@mkdir($this->container['path'], $this->config['path_chmod'], true);
+
+				if ( ! is_dir($this->container['path']))
+				{
+					throw new \DomainException('Can\'t save the uploaded file. Destination path specified does not exist.');
+				}
+			}
+
+			// was a new name for the file given?
+			if ( ! array_key_exists('filename', $this->container))
+			{
+				// do we need to generate a random filename?
+				if ( (bool) $this->config['randomize'])
+				{
+					$this->container['filename'] = md5(serialize($this->container));
+				}
+
+				// do we need to normalize the filename?
+				else
+				{
+					$this->container['filename']  = $this->container['name'];
+					(bool) $this->config['normalize'] and $this->normalize();
+				}
+			}
+
+			// array with all filename components
+			$filename = array(
+				$this->config['prefix'],
+				$this->container['filename'],
+				$this->config['suffix'],
+				'',
+				'.',
+				empty($this->config['extension']) ? $this->container['extension'] : $this->config['extension']
+			);
+
+			// remove the dot if no extension is present
+			empty($filename[5]) and $filename[4] = '';
+
+			// need to modify case?
+			switch($this->config['change_case'])
+			{
+				case 'upper':
+					$filename = array_map(function($var) { return strtoupper($var); }, $filename);
+				break;
+
+				case 'lower':
+					$filename = array_map(function($var) { return strtolower($var); }, $filename);
+				break;
+
+				default:
+				break;
+			}
+
+			// if we're saving the file locally
+			if ( ! $this->ftpInstance)
+			{
+				// check if the file already exists
+				if (file_exists($this->container['path'].implode('', $filename)))
+				{
+					if ( (bool) $this->config['auto_rename'])
+					{
+						$counter = 0;
+						do
+						{
+							$filename[3] = '_'.++$counter;
+						}
+						while (file_exists($this->container['path'].implode('', $filename)));
+					}
+					else
+					{
+						if ( ! (bool) $this->config['overwrite'])
+						{
+							$this->errors[] = new FileError(static::UPLOAD_ERR_DUPLICATE_FILE);
+						}
+					}
+				}
+			}
+
+			// no need to store it as an array anymore
+			$this->container['filename'] = implode('', $filename);
+
+			// does the filename exceed the maximum length?
+			if ( ! empty($this->config['max_length']) and strlen($this->container['filename']) > $this->config['max_length'])
+			{
+				$this->errors[] = new FileError(static::UPLOAD_ERR_MAX_FILENAME_LENGTH);
+			}
+
+			// update the status of this validation
+			$this->isValid = empty($this->errors);
+
+			// if the file is still valid, run the before save callbacks
+			if ($this->isValid)
+			{
+				// validation starts, call the pre-save callbacks
+				$this->runCallbacks('before_save');
+
+				// recheck the path, it might have been altered by a callback
+				if ($this->isValid and ! is_dir($this->container['path']) and (bool) $this->config['create_path'])
+				{
+					@mkdir($this->container['path'], $this->config['path_chmod'], true);
+
+					if ( ! is_dir($this->container['path']))
+					{
+						$this->errors[] = new FileError(static::UPLOAD_ERR_MKDIR_FAILED);
+					}
+				}
+
+				// update the status of this validation
+				$this->isValid = empty($this->errors);
+			}
+
+			// if the file is still valid, move it
+			if ($this->isValid)
+			{
+				// check if file should be moved to an ftp server
+				if ($this->ftpInstance)
+				{
+					throw new \Exception('Moving a file to an FTP server isn\'t supported yet!');
+
+					$uploaded = $this->ftpInstance->upload(
+						$this->container['tmp_name'],
+						$this->container['path'].$this->container['filename'],
+						$this->config['ftp_mode'],
+						$this->config['ftp_permissions']
+					);
+
+					if ( ! $uploaded)
+					{
+						$this->errors[] = new FileError(static::UPLOAD_ERR_FTP_FAILED);
+					}
+				}
+				else
+				{
+					if( ! @move_uploaded_file($this->container['tmp_name'], $this->container['path'].$this->container['filename']))
+					{
+						$this->errors[] = new FileError(static::UPLOAD_ERR_MOVE_FAILED);
+					}
+					else
+					{
+						@chmod($this->container['path'].$this->container['filename'], $this->config['file_chmod']);
+					}
+				}
+			}
+
+			// validation starts, call the post-save callback
+			if ($this->isValid)
+			{
+				$this->runCallbacks('after_save');
+			}
+		}
+
+		// return the status of this operation
+		return empty($this->errors);
+	}
+
+	/**
+	 * Run callbacks of he defined type
+	 */
+	protected function runCallbacks($type)
+	{
+		// make sure we have callbacks of this type
+		if (array_key_exists($type, $this->callbacks))
+		{
+			// run the defined callbacks
+			foreach ($this->callbacks[$type] as $callback)
+			{
+				// check if the callback is valid
+				if (is_callable($callback))
+				{
+					// call the defined callback
+					$result = call_user_func($callback, $this);
+
+					// and process the results. we need FileError instances only
+					foreach ((array) $result as $entry)
+					{
+						if (is_object($entry) and $entry instanceOf FileError)
+						{
+							$this->errors[] = $entry;
+						}
+					}
+
+					// update the status of this validation
+					$this->isValid = empty($this->errors);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Convert a filename into a normalized name. only outputs 7 bit ASCII characters.
+	 */
+	protected function normalize()
+	{
+		// Decode all entities to their simpler forms
+		$this->container['filename'] = html_entity_decode($this->container['filename'], ENT_QUOTES, 'UTF-8');
+
+		// Remove all quotes
+		$this->container['filename'] = preg_replace("#[\"\']#", '', $this->container['filename']);
+
+		// Strip unwanted characters
+		$this->container['filename'] = preg_replace("#[^a-z0-9]#i", $this->config['normalize_separator'], $this->container['filename']);
+		$this->container['filename'] = preg_replace("#[/_|+ -]+#u", $this->config['normalize_separator'], $this->container['filename']);
+		$this->container['filename'] = trim($this->container['filename'], $this->config['normalize_separator']);
+	}
+}
