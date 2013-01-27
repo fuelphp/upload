@@ -116,26 +116,98 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Run save on all loaded file objects
 	 *
+	 * @param  int|string|array  $selection  Optional array index, element name or array with filter values
+	 *
 	 * @return void
 	 */
-	public function save()
+	public function save($selection = null)
 	{
-		// loop through all files
-		foreach ($this->container as $file)
+		// prepare the selection
+		if (func_num_args())
+		{
+			if (is_array($selection))
+			{
+				$filter = array();
+
+				foreach ($this->container as $file)
+				{
+					$match = true;
+					foreach($selection as $item => $value)
+					{
+						if ($value != $file->{$item})
+						{
+							$match = false;
+							break;
+						}
+					}
+
+					$match and $filter[] = $file;
+				}
+
+				$selection = $filter;
+			}
+			else
+			{
+				$selection =  (array) $this[$index];
+			}
+		}
+		else
+		{
+			$selection = $this->container;
+		}
+
+		// loop through all selected files
+		foreach ($selection as $file)
 		{
 			$file->save();
 		}
 	}
 
 	/**
-	 * Run validation on all loaded file objects
+	 * Run validation on all selected file objects
+	 *
+	 * @param  int|string|array  $selection  Optional array index, element name or array with filter values
 	 *
 	 * @return void
 	 */
-	public function validate()
+	public function validate($selection = null)
 	{
-		// loop through all files
-		foreach ($this->container as $file)
+		// prepare the selection
+		if (func_num_args())
+		{
+			if (is_array($selection))
+			{
+				$filter = array();
+
+				foreach ($this->container as $file)
+				{
+					$match = true;
+					foreach($selection as $item => $value)
+					{
+						if ($value != $file->{$item})
+						{
+							$match = false;
+							break;
+						}
+					}
+
+					$match and $filter[] = $file;
+				}
+
+				$selection = $filter;
+			}
+			else
+			{
+				$selection =  (array) $this[$index];
+			}
+		}
+		else
+		{
+			$selection = $this->container;
+		}
+
+		// loop through all selected files
+		foreach ($selection as $file)
 		{
 			$file->validate();
 		}
