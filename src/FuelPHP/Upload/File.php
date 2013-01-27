@@ -280,6 +280,9 @@ class File
 				$this->errors[] = new FileError(static::UPLOAD_ERR_MIME_NOT_WHITELISTED);
 			}
 
+			// update the status of this validation
+			$this->isValid = empty($this->errors);
+
 			// validation finished, call the post-validation callback
 			$this->runCallbacks('after_validation');
 		}
@@ -310,7 +313,7 @@ class File
 		if ($this->isValid)
 		{
 			// make sure we have a valid path
-			if (empty($this->config['path']))
+			if (empty($this->container['path']))
 			{
 				$this->container['path'] = rtrim($this->config['path'], DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 			}
