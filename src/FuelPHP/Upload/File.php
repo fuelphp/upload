@@ -15,7 +15,7 @@ namespace FuelPHP\Upload;
 /**
  * Files is a container for a single uploaded file
  */
-class File
+class File implements \ArrayAccess, \Iterator, \Countable
 {
 	/**
 	 * Our custom error code constants
@@ -31,12 +31,17 @@ class File
 	const UPLOAD_ERR_MOVE_FAILED          = 109;
 	const UPLOAD_ERR_DUPLICATE_FILE       = 110;
 	const UPLOAD_ERR_MKDIR_FAILED         = 111;
-	const UPLOAD_ERR_FTP_FAILED           = 112;
+	const UPLOAD_ERR_EXTERNAL_MOVE_FAILED = 112;
 
 	/**
 	 * @var  array  Container for uploaded file objects
 	 */
 	protected $container = array();
+
+	/**
+	 * @var  int  index pointer for Iterator
+	 */
+	protected $index = 0;
 
 	/**
 	 * @var  array  Container for validation errors
@@ -71,9 +76,6 @@ class File
 		'file_chmod'      => 0666,
 		'auto_rename'     => true,
 		'overwrite'       => false,
-		// save-to-ftp settings
-		'ftp_mode'        => 'auto',
-		'ftp_permissions' => null
 	);
 
 	/**
@@ -92,25 +94,31 @@ class File
 	protected $callbacks = array();
 
 	/**
-	 * @var  mixed  FuelPHP FTP instance, for saving files to an FTP server
+	 * @var  mixed  Callback to perform error string translations
 	 */
-	protected $ftpInstance = null;
+	protected $langCallback = null;
+
+	/**
+	 * @var  mixed  Callback to a custom file move operation
+	 */
+	protected $moveCallback = null;
 
 	/**
 	 * Constructor
 	 *
 	 * @param  array  $file  Array with unified information about the file uploaded
 	 */
-	public function __construct(array $file, &$callbacks = array(), &$ftpInstance = null)
+	public function __construct(array $file, &$callbacks = array(), $langCallback = null, $moveCallback = null)
 	{
 		// store the file data for this file
 		$this->container = $file;
 
-		// the callbacks reference
+		// the file callbacks reference
 		$this->callbacks =& $callbacks;
 
-		// and the callbacks reference
-		$this->ftpInstance =& $ftpInstance;
+		// and the system callbacks
+		$this->langCallback = $langCallback;
+		$this->moveCallback = $moveCallback;
 	}
 
 	/**
@@ -218,7 +226,7 @@ class File
 			// does this upload exceed the maximum size?
 			if ( ! empty($this->config['max_size']) and is_numeric($this->config['max_size']) and $this->container['size'] > $this->config['max_size'])
 			{
-				$this->errors[] = new FileError(static::UPLOAD_ERR_MAX_SIZE);
+				$this->addError(static::UPLOAD_ERR_MAX_SIZE);
 			}
 
 			// add mimetype information
@@ -232,7 +240,7 @@ class File
 			catch (\ErrorException $e)
 			{
 				$this->container['mimetype'] = false;
-				$this->errors[] = new FileError(UPLOAD_ERR_NO_FILE);
+				$this->addError(UPLOAD_ERR_NO_FILE);
 			}
 
 			// always use the more specific of the mime types available
@@ -253,32 +261,35 @@ class File
 			// check the file extension black- and whitelists
 			if (in_array(strtolower($this->container['extension']), (array) $this->config['ext_blacklist']))
 			{
-				$this->errors[] = new FileError(static::UPLOAD_ERR_EXT_BLACKLISTED);
+				$this->addError(static::UPLOAD_ERR_EXT_BLACKLISTED);
 			}
 			elseif ( ! empty($this->config['ext_whitelist']) and ! in_array(strtolower($this->container['extension']), (array) $this->config['ext_whitelist']))
 			{
-				$this->errors[] = new FileError(static::UPLOAD_ERR_EXT_NOT_WHITELISTED);
+				$this->addError(static::UPLOAD_ERR_EXT_NOT_WHITELISTED);
 			}
 
 			// check the file type black- and whitelists
 			if (in_array($mimeinfo[1], (array) $this->config['type_blacklist']))
 			{
-				$this->errors[] = new FileError(static::UPLOAD_ERR_TYPE_BLACKLISTED);
+				$this->addError(static::UPLOAD_ERR_TYPE_BLACKLISTED);
 			}
 			if ( ! empty($this->config['type_whitelist']) and ! in_array($mimeinfo[1], (array) $this->config['type_whitelist']))
 			{
-				$this->errors[] = new FileError(static::UPLOAD_ERR_TYPE_NOT_WHITELISTED);
+				$this->addError(static::UPLOAD_ERR_TYPE_NOT_WHITELISTED);
 			}
 
 			// check the file mimetype black- and whitelists
 			if (in_array($this->container['mimetype'], (array) $this->config['mime_blacklist']))
 			{
-				$this->errors[] = new FileError(static::UPLOAD_ERR_MIME_BLACKLISTED);
+				$this->addError(static::UPLOAD_ERR_MIME_BLACKLISTED);
 			}
 			elseif ( ! empty($this->config['mime_whitelist']) and ! in_array($this->container['mimetype'], (array) $this->config['mime_whitelist']))
 			{
-				$this->errors[] = new FileError(static::UPLOAD_ERR_MIME_NOT_WHITELISTED);
+				$this->addError(static::UPLOAD_ERR_MIME_NOT_WHITELISTED);
 			}
+
+			// update the status of this validation
+			$this->isValid = empty($this->errors);
 
 			// validation finished, call the post-validation callback
 			$this->runCallbacks('after_validation');
@@ -286,7 +297,7 @@ class File
 		else
 		{
 			// upload was already a failure, store the corresponding error
-			$this->errors[] = new FileError($this->container['error']);
+			$this->addError($this->container['error']);
 
 			// and mark this validation a failure
 			$this->isValid = false;
@@ -310,7 +321,7 @@ class File
 		if ($this->isValid)
 		{
 			// make sure we have a valid path
-			if (empty($this->config['path']))
+			if (empty($this->container['path']))
 			{
 				$this->container['path'] = rtrim($this->config['path'], DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 			}
@@ -370,7 +381,7 @@ class File
 			}
 
 			// if we're saving the file locally
-			if ( ! $this->ftpInstance)
+			if ( ! $this->moveCallback)
 			{
 				// check if the file already exists
 				if (file_exists($this->container['path'].implode('', $filename)))
@@ -388,7 +399,7 @@ class File
 					{
 						if ( ! (bool) $this->config['overwrite'])
 						{
-							$this->errors[] = new FileError(static::UPLOAD_ERR_DUPLICATE_FILE);
+							$this->addError(static::UPLOAD_ERR_DUPLICATE_FILE);
 						}
 					}
 				}
@@ -400,7 +411,7 @@ class File
 			// does the filename exceed the maximum length?
 			if ( ! empty($this->config['max_length']) and strlen($this->container['filename']) > $this->config['max_length'])
 			{
-				$this->errors[] = new FileError(static::UPLOAD_ERR_MAX_FILENAME_LENGTH);
+				$this->addError(static::UPLOAD_ERR_MAX_FILENAME_LENGTH);
 			}
 
 			// update the status of this validation
@@ -419,7 +430,7 @@ class File
 
 					if ( ! is_dir($this->container['path']))
 					{
-						$this->errors[] = new FileError(static::UPLOAD_ERR_MKDIR_FAILED);
+						$this->addError(static::UPLOAD_ERR_MKDIR_FAILED);
 					}
 				}
 
@@ -431,27 +442,19 @@ class File
 			if ($this->isValid)
 			{
 				// check if file should be moved to an ftp server
-				if ($this->ftpInstance)
+				if ($this->moveCallback)
 				{
-					throw new \Exception('Moving a file to an FTP server isn\'t supported yet!');
-
-					$uploaded = $this->ftpInstance->upload(
-						$this->container['tmp_name'],
-						$this->container['path'].$this->container['filename'],
-						$this->config['ftp_mode'],
-						$this->config['ftp_permissions']
-					);
-
-					if ( ! $uploaded)
+					$moved = call_user_func($this->container['tmp_name'], $this->container['path'].$this->container['filename']);
+					if ( ! $moved)
 					{
-						$this->errors[] = new FileError(static::UPLOAD_ERR_FTP_FAILED);
+						$this->addError(static::UPLOAD_ERR_EXTERNAL_MOVE_FAILED);
 					}
 				}
 				else
 				{
 					if( ! @move_uploaded_file($this->container['tmp_name'], $this->container['path'].$this->container['filename']))
 					{
-						$this->errors[] = new FileError(static::UPLOAD_ERR_MOVE_FAILED);
+						$this->addError(static::UPLOAD_ERR_MOVE_FAILED);
 					}
 					else
 					{
@@ -519,5 +522,76 @@ class File
 		$this->container['filename'] = preg_replace("#[^a-z0-9]#i", $this->config['normalize_separator'], $this->container['filename']);
 		$this->container['filename'] = preg_replace("#[/_|+ -]+#u", $this->config['normalize_separator'], $this->container['filename']);
 		$this->container['filename'] = trim($this->container['filename'], $this->config['normalize_separator']);
+	}
+
+	/**
+	 * Add a new error object to the list
+	 *
+	 * @param  array  $entry  uploaded file structure
+	 */
+	protected function addError($error)
+	{
+		$this->errors[] = new FileError($error, $this->langCallback);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Countable methods
+	 */
+	public function count()
+	{
+		return count($this->container);
+	}
+
+	/**
+	 * ArrayAccess methods
+	 */
+	public function offsetExists($offset)
+	{
+		return isset($this->container[$offset]);
+	}
+
+	public function offsetGet($offset)
+	{
+		return $this->container[$offset];
+	}
+
+	public function offsetSet($offset, $value)
+	{
+		$this->container[$offset] = $value;
+	}
+
+	public function offsetUnset($offset)
+	{
+		throw new \OutOfBoundsException('You can not unset a data element of an Upload File instance');
+	}
+
+	/**
+	 * Iterator methods
+	 */
+	function rewind()
+	{
+		return reset($this->container);
+	}
+
+	function current()
+	{
+		return current($this->container);
+	}
+
+	function key()
+	{
+		return key($this->container);
+	}
+
+	function next()
+	{
+		return next($this->container);
+	}
+
+	function valid()
+	{
+		return key($this->container) !== null;
 	}
 }

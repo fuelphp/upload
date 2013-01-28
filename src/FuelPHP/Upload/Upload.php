@@ -33,7 +33,8 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	protected $defaults = array(
 		// global settings
 		'auto_process'    => false,
-		'use_ftp'         => false,
+		'langCallback'    => null,
+		'moveCallback'    => null,
 		// validation settings
 		'max_size'        => 0,
 		'max_length'      => 0,
@@ -58,9 +59,6 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 		'file_chmod'      => 0666,
 		'auto_rename'     => true,
 		'overwrite'       => false,
-		// save-to-ftp settings
-		'ftp_mode'        => 'auto',
-		'ftp_permissions' => null
 	);
 
 	/**
@@ -72,11 +70,6 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 		'before_save' => array(),
 		'after_save' => array(),
 	);
-
-	/**
-	 * @var  mixed  FuelPHP FTP instance, for saving files to an FTP server
-	 */
-	protected $ftpInstance = null;
 
 	/**
 	 * Constructor
@@ -103,39 +96,109 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 		// process the data in the $_FILES array
 		$this->processFiles();
 
-		// load all objects with a default config
-		foreach ($this->container as $file)
-		{
-			$file->setConfig($this->defaults);
-		}
-
 		// if auto-process was active, run validation on all file objects
-		$this->defaults['auto_process'] and $this->validate();
+		if ($this->defaults['auto_process'])
+		{
+			// and validate it
+			$this->validate();
+		}
 	}
 
 	/**
 	 * Run save on all loaded file objects
 	 *
+	 * @param  int|string|array  $selection  Optional array index, element name or array with filter values
+	 *
 	 * @return void
 	 */
-	public function save()
+	public function save($selection = null)
 	{
-		// loop through all files
-		foreach ($this->container as $file)
+		// prepare the selection
+		if (func_num_args())
+		{
+			if (is_array($selection))
+			{
+				$filter = array();
+
+				foreach ($this->container as $file)
+				{
+					$match = true;
+					foreach($selection as $item => $value)
+					{
+						if ($value != $file->{$item})
+						{
+							$match = false;
+							break;
+						}
+					}
+
+					$match and $filter[] = $file;
+				}
+
+				$selection = $filter;
+			}
+			else
+			{
+				$selection =  (array) $this[$index];
+			}
+		}
+		else
+		{
+			$selection = $this->container;
+		}
+
+		// loop through all selected files
+		foreach ($selection as $file)
 		{
 			$file->save();
 		}
 	}
 
 	/**
-	 * Run validation on all loaded file objects
+	 * Run validation on all selected file objects
+	 *
+	 * @param  int|string|array  $selection  Optional array index, element name or array with filter values
 	 *
 	 * @return void
 	 */
-	public function validate()
+	public function validate($selection = null)
 	{
-		// loop through all files
-		foreach ($this->container as $file)
+		// prepare the selection
+		if (func_num_args())
+		{
+			if (is_array($selection))
+			{
+				$filter = array();
+
+				foreach ($this->container as $file)
+				{
+					$match = true;
+					foreach($selection as $item => $value)
+					{
+						if ($value != $file->{$item})
+						{
+							$match = false;
+							break;
+						}
+					}
+
+					$match and $filter[] = $file;
+				}
+
+				$selection = $filter;
+			}
+			else
+			{
+				$selection =  (array) $this[$index];
+			}
+		}
+		else
+		{
+			$selection = $this->container;
+		}
+
+		// loop through all selected files
+		foreach ($selection as $file)
 		{
 			$file->validate();
 		}
@@ -172,7 +235,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	public function getValidFiles($index = null)
 	{
 		// prepare the selection
-		$selection =  func_num_args() ?	(array) $this[$index] : $this->container;
+		$selection =  (func_num_args() and ! is_null($index)) ? (array) $this[$index] : $this->container;
 
 		// storage for the results
 		$results = array();
@@ -198,7 +261,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	public function getInvalidFiles($index = null)
 	{
 		// prepare the selection
-		$selection =  func_num_args() ?	(array) $this[$index] : $this->container;
+		$selection =  (func_num_args() and ! is_null($index)) ? (array) $this[$index] : $this->container;
 
 		// storage for the results
 		$results = array();
@@ -325,7 +388,11 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 */
 	protected function addFile(array $entry)
 	{
-		$this->container[] = new File($entry, $this->callbacks, $this->ftpInstance);
+		// add the new file object to the container
+		$this->container[] = new File($entry, $this->callbacks, $this->defaults['langCallback'], $this->defaults['moveCallback']);
+
+		// and load it with a default config
+		end($this->container)->setConfig($this->defaults);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -335,7 +402,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 */
 	public function count()
 	{
-		return count($container);
+		return count($this->container);
 	}
 
 	/**
