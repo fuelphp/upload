@@ -58,10 +58,19 @@ class FileError
 	 *
 	 * @param  int  $error  Number of the error message
 	 */
-	public function __construct($error)
+	public function __construct($error, $langCallback = null)
 	{
 		$this->error = $error;
-		$this->message = isset($this->messages[$error]) ? $this->messages[$error] : 'Unknown error message number: '.$error;
+
+		if (is_callable($langCallback))
+		{
+			$this->message = call_user_func($langCallback, $error);
+		}
+
+		if (empty($this->message))
+		{
+			$this->message = isset($this->messages[$error]) ? $this->messages[$error] : 'Unknown error message number: '.$error;
+		}
 	}
 
 	/**
