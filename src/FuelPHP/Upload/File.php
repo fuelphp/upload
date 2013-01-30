@@ -444,7 +444,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				// check if file should be moved to an ftp server
 				if ($this->moveCallback)
 				{
-					$moved = call_user_func($this->container['tmp_name'], $this->container['path'].$this->container['filename']);
+					$moved = call_user_func($this->moveCallback, $this->container['tmp_name'], $this->container['path'].$this->container['filename']);
+
 					if ( ! $moved)
 					{
 						$this->addError(static::UPLOAD_ERR_EXTERNAL_MOVE_FAILED);
