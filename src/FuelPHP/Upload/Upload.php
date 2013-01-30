@@ -226,6 +226,19 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
+	 * Return the list of uploaded files
+	 *
+	 * @param  int|string  $index  Optional array index or element name
+	 *
+	 * @return array
+	 */
+	public function getAllFiles($index = null)
+	{
+		// return the selection
+		return (func_num_args() and ! is_null($index)) ? (array) $this[$index] : $this->container;
+	}
+
+	/**
 	 * Return the list of uploaded files that valid
 	 *
 	 * @param  int|string  $index  Optional array index or element name
@@ -304,6 +317,33 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 		else
 		{
 			throw new \InvalidArgumentException($event.' is not a valid event');
+		}
+	}
+
+	/**
+	 * Set the configuration for this file
+	 *
+	 * @param  $name  string|array  name of the configuration item to set, or an array of configuration items
+	 * @param  $value mixed  if $name is an item name, this holds the configuration values for that item
+	 *
+	 * @return  void
+	 */
+	public function setConfig($item, $value = null)
+	{
+		// unify the parameters
+		is_array($item) or $item = array($item => $value);
+
+		// update the configuration
+		foreach ($item as $name => $value)
+		{
+			// is this a valid config item? then update the defaults
+			array_key_exists($name, $this->defaults) and $this->defaults[$name] = $value;
+		}
+
+		// and push it to all file objects in the containers
+		foreach ($this->container as $file)
+		{
+			$file->setConfig($item);
 		}
 	}
 
@@ -389,7 +429,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	protected function addFile(array $entry)
 	{
 		// add the new file object to the container
-		$this->container[] = new File($entry, $this->callbacks, $this->defaults['langCallback'], $this->defaults['moveCallback']);
+		$this->container[] = new File($entry, $this->callbacks);
 
 		// and load it with a default config
 		end($this->container)->setConfig($this->defaults);

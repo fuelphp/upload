@@ -52,6 +52,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	 * @var  array  Configuration values
 	 */
 	protected $config = array(
+		'langCallback'    => null,
+		'moveCallback'    => null,
 		// validation settings
 		'max_size'        => 0,
 		'max_length'      => 0,
@@ -94,31 +96,17 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	protected $callbacks = array();
 
 	/**
-	 * @var  mixed  Callback to perform error string translations
-	 */
-	protected $langCallback = null;
-
-	/**
-	 * @var  mixed  Callback to a custom file move operation
-	 */
-	protected $moveCallback = null;
-
-	/**
 	 * Constructor
 	 *
 	 * @param  array  $file  Array with unified information about the file uploaded
 	 */
-	public function __construct(array $file, &$callbacks = array(), $langCallback = null, $moveCallback = null)
+	public function __construct(array $file, &$callbacks = array())
 	{
 		// store the file data for this file
 		$this->container = $file;
 
 		// the file callbacks reference
 		$this->callbacks =& $callbacks;
-
-		// and the system callbacks
-		$this->langCallback = $langCallback;
-		$this->moveCallback = $moveCallback;
 	}
 
 	/**
@@ -381,7 +369,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			}
 
 			// if we're saving the file locally
-			if ( ! $this->moveCallback)
+			if ( ! $this->config['moveCallback'])
 			{
 				// check if the file already exists
 				if (file_exists($this->container['path'].implode('', $filename)))
@@ -442,9 +430,9 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			if ($this->isValid)
 			{
 				// check if file should be moved to an ftp server
-				if ($this->moveCallback)
+				if ($this->config['moveCallback'])
 				{
-					$moved = call_user_func($this->moveCallback, $this->container['tmp_name'], $this->container['path'].$this->container['filename']);
+					$moved = call_user_func($this->config['moveCallback'], $this->container['tmp_name'], $this->container['path'].$this->container['filename']);
 
 					if ( ! $moved)
 					{
@@ -532,7 +520,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	 */
 	protected function addError($error)
 	{
-		$this->errors[] = new FileError($error, $this->langCallback);
+		$this->errors[] = new FileError($error, $this->config['langCallback']);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
