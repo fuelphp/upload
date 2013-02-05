@@ -322,6 +322,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 					throw new \DomainException('Can\'t save the uploaded file. Destination path specified does not exist.');
 				}
 			}
+			$this->container['path'] = realpath($this->container['path']).DIRECTORY_SEPARATOR;
 
 			// was a new name for the file given?
 			if ( ! array_key_exists('filename', $this->container))
