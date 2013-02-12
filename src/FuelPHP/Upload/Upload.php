@@ -139,7 +139,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			}
 			else
 			{
-				$selection =  (array) $this[$index];
+				$selection =  array($this[$index]);
 			}
 		}
 		else
@@ -189,7 +189,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			}
 			else
 			{
-				$selection =  (array) $this[$index];
+				$selection =  array($this[$index]);
 			}
 		}
 		else
@@ -235,7 +235,12 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	public function getAllFiles($index = null)
 	{
 		// return the selection
-		return (func_num_args() and ! is_null($index)) ? (array) $this[$index] : $this->container;
+		$selection = (func_num_args() and ! is_null($index)) ? $this[$index] : $this->container;
+
+		// make sure selection is an array
+		is_array($selection) or $selection = array($selection);
+
+		return $selection;
 	}
 
 	/**
@@ -248,7 +253,10 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	public function getValidFiles($index = null)
 	{
 		// prepare the selection
-		$selection =  (func_num_args() and ! is_null($index)) ? (array) $this[$index] : $this->container;
+		$selection =  (func_num_args() and ! is_null($index)) ? $this[$index] : $this->container;
+
+		// make sure selection is an array
+		is_array($selection) or $selection = array($selection);
 
 		// storage for the results
 		$results = array();
@@ -274,7 +282,10 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	public function getInvalidFiles($index = null)
 	{
 		// prepare the selection
-		$selection =  (func_num_args() and ! is_null($index)) ? (array) $this[$index] : $this->container;
+		$selection =  (func_num_args() and ! is_null($index)) ? $this[$index] : $this->container;
+
+		// make sure selection is an array
+		is_array($selection) or $selection = array($selection);
 
 		// storage for the results
 		$results = array();
