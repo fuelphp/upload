@@ -204,11 +204,11 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			$this->container['extension'] = ltrim(strrchr(ltrim($this->container['name'], '.'), '.'),'.');
 			if (empty($this->container['extension']))
 			{
-				$this->container['filename'] = $this->container['name'];
+				$this->container['basename'] = $this->container['name'];
 			}
 			else
 			{
-				$this->container['filename'] = substr($this->container['name'], 0, strlen($this->container['name'])-(strlen($this->container['extension'])+1));
+				$this->container['basename'] = substr($this->container['name'], 0, strlen($this->container['name'])-(strlen($this->container['extension'])+1));
 			}
 
 			// does this upload exceed the maximum size?
@@ -336,7 +336,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				// do we need to normalize the filename?
 				else
 				{
-					$this->container['filename']  = $this->container['name'];
+					$this->container['filename']  = $this->container['basename'];
 					(bool) $this->config['normalize'] and $this->normalize();
 				}
 			}
