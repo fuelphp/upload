@@ -75,6 +75,8 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 * Constructor
 	 *
 	 * @param  array|null  $config  Optional array of configuration items
+	 *
+	 * @throws NoFilesException No uploaded files were found (did specify "enctype"?)
 	 */
 	public function __construct(array $config = null)
 	{
@@ -307,6 +309,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 * @param  string  $event  The type of the event
 	 * @param  mixed  $callback  Any valid callback, must accept a File object
 	 *
+	 * @throws \InvalidArgumentException Not valid event or not callable second parameter
 	 * @return  void
 	 */
 	public static function register($event, $callback)
@@ -334,8 +337,8 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Set the configuration for this file
 	 *
-	 * @param  $name  string|array  name of the configuration item to set, or an array of configuration items
-	 * @param  $value mixed  if $name is an item name, this holds the configuration values for that item
+	 * @param  string|array  $item  name of the configuration item to set, or an array of configuration items
+	 * @param  mixed  $value  if $name is an item name, this holds the configuration values for that item
 	 *
 	 * @return  void
 	 */

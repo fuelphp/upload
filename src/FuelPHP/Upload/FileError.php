@@ -56,7 +56,10 @@ class FileError
 	/**
 	 * Constructor
 	 *
-	 * @param  int  $error  Number of the error message
+	 * @param  int          $error  Number of the error message
+	 * @param callable|null $langCallback
+	 *
+	 * @return \FuelPHP\Upload\FileError
 	 */
 	public function __construct($error, $langCallback = null)
 	{
