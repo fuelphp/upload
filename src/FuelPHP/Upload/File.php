@@ -52,6 +52,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	 * @var  array  Configuration values
 	 */
 	protected $config = array(
+		'langCallback'    => null,
+		'moveCallback'    => null,
 		// validation settings
 		'max_size'        => 0,
 		'max_length'      => 0,
@@ -94,31 +96,18 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	protected $callbacks = array();
 
 	/**
-	 * @var  mixed  Callback to perform error string translations
-	 */
-	protected $langCallback = null;
-
-	/**
-	 * @var  mixed  Callback to a custom file move operation
-	 */
-	protected $moveCallback = null;
-
-	/**
 	 * Constructor
 	 *
-	 * @param  array  $file  Array with unified information about the file uploaded
+	 * @param  array       $file  Array with unified information about the file uploaded
+	 * @param  array|null  $callbacks
 	 */
-	public function __construct(array $file, &$callbacks = array(), $langCallback = null, $moveCallback = null)
+	public function __construct(array $file, &$callbacks = array())
 	{
 		// store the file data for this file
 		$this->container = $file;
 
 		// the file callbacks reference
 		$this->callbacks =& $callbacks;
-
-		// and the system callbacks
-		$this->langCallback = $langCallback;
-		$this->moveCallback = $moveCallback;
 	}
 
 	/**
@@ -179,8 +168,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Set the configuration for this file
 	 *
-	 * @param  $name  string|array  name of the configuration item to set, or an array of configuration items
-	 * @param  $value mixed  if $name is an item name, this holds the configuration values for that item
+	 * @param  string|array  $item  name of the configuration item to set, or an array of configuration items
+	 * @param  mixed         $value if $name is an item name, this holds the configuration values for that item
 	 *
 	 * @return  void
 	 */
@@ -313,6 +302,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Save the uploaded file
 	 *
+	 * @throws \DomainException Destination path specified does not exist
+	 *
 	 * @return  bool
 	 */
 	public function save()
@@ -334,6 +325,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 					throw new \DomainException('Can\'t save the uploaded file. Destination path specified does not exist.');
 				}
 			}
+			$this->container['path'] = realpath($this->container['path']).DIRECTORY_SEPARATOR;
 
 			// was a new name for the file given?
 			if ( ! array_key_exists('filename', $this->container))
@@ -381,7 +373,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			}
 
 			// if we're saving the file locally
-			if ( ! $this->moveCallback)
+			if ( ! $this->config['moveCallback'])
 			{
 				// check if the file already exists
 				if (file_exists($this->container['path'].implode('', $filename)))
@@ -442,9 +434,10 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			if ($this->isValid)
 			{
 				// check if file should be moved to an ftp server
-				if ($this->moveCallback)
+				if ($this->config['moveCallback'])
 				{
-					$moved = call_user_func($this->container['tmp_name'], $this->container['path'].$this->container['filename']);
+					$moved = call_user_func($this->config['moveCallback'], $this->container['tmp_name'], $this->container['path'].$this->container['filename']);
+
 					if ( ! $moved)
 					{
 						$this->addError(static::UPLOAD_ERR_EXTERNAL_MOVE_FAILED);
@@ -476,6 +469,10 @@ class File implements \ArrayAccess, \Iterator, \Countable
 
 	/**
 	 * Run callbacks of he defined type
+	 *
+	 * @param callable $type Valid callable callback
+	 *
+	 * @return void
 	 */
 	protected function runCallbacks($type)
 	{
@@ -509,6 +506,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 
 	/**
 	 * Convert a filename into a normalized name. only outputs 7 bit ASCII characters.
+	 *
+	 * @return void
 	 */
 	protected function normalize()
 	{
@@ -527,11 +526,13 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Add a new error object to the list
 	 *
-	 * @param  array  $entry  uploaded file structure
+	 * @param  array  $error  uploaded file structure
+	 *
+	 * @return void
 	 */
 	protected function addError($error)
 	{
-		$this->errors[] = new FileError($error, $this->langCallback);
+		$this->errors[] = new FileError($error, $this->config['langCallback']);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
