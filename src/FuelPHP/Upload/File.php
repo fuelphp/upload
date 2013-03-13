@@ -98,7 +98,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Constructor
 	 *
-	 * @param  array  $file  Array with unified information about the file uploaded
+	 * @param  array       $file  Array with unified information about the file uploaded
+	 * @param  array|null  $callbacks
 	 */
 	public function __construct(array $file, &$callbacks = array())
 	{
@@ -167,8 +168,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Set the configuration for this file
 	 *
-	 * @param  $name  string|array  name of the configuration item to set, or an array of configuration items
-	 * @param  $value mixed  if $name is an item name, this holds the configuration values for that item
+	 * @param  string|array  $item  name of the configuration item to set, or an array of configuration items
+	 * @param  mixed         $value if $name is an item name, this holds the configuration values for that item
 	 *
 	 * @return  void
 	 */
@@ -300,6 +301,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 
 	/**
 	 * Save the uploaded file
+	 *
+	 * @throws \DomainException Destination path specified does not exist
 	 *
 	 * @return  bool
 	 */
@@ -466,6 +469,10 @@ class File implements \ArrayAccess, \Iterator, \Countable
 
 	/**
 	 * Run callbacks of he defined type
+	 *
+	 * @param callable $type Valid callable callback
+	 *
+	 * @return void
 	 */
 	protected function runCallbacks($type)
 	{
@@ -499,6 +506,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 
 	/**
 	 * Convert a filename into a normalized name. only outputs 7 bit ASCII characters.
+	 *
+	 * @return void
 	 */
 	protected function normalize()
 	{
@@ -517,7 +526,9 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Add a new error object to the list
 	 *
-	 * @param  array  $entry  uploaded file structure
+	 * @param  array  $error  uploaded file structure
+	 *
+	 * @return void
 	 */
 	protected function addError($error)
 	{
