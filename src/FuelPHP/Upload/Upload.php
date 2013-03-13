@@ -95,12 +95,12 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			throw new NoFilesException('No uploaded files were found. Did you specify "enctype" in your &lt;form&gt; tag?');
 		}
 
-		// process the data in the $_FILES array
-		$this->processFiles();
-
 		// if auto-process was active, run validation on all file objects
 		if ($this->defaults['auto_process'])
 		{
+			// process all data in the $_FILES array
+			$this->processFiles();
+
 			// and validate it
 			$this->validate();
 		}
@@ -363,8 +363,10 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 
 	/**
 	 * Process the data in the $_FILES array, unify it, and create File objects for them
+	 *
+	 * @param  mixed  $selection  Array of fieldnames to process, or null for all uploaded files
 	 */
-	protected function processFiles()
+	public function processFiles(array $selection = null)
 	{
 		// normalize the multidimensional fields in the $_FILES array
 		foreach($_FILES as $name => $file)
@@ -375,13 +377,19 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 				$data = $this->unifyFile($name, $file);
 				foreach ($data as $entry)
 				{
-					$this->addFile($entry);
+					if ($selection === null or in_array($entry['element'], $selection))
+					{
+						$this->addFile($entry);
+					}
 				}
     		}
 			else
 			{
 				// normal form element, just create a File object for this uploaded file
-				$this->addFile(array_merge(array('element' => $name), $file));
+				if ($selection === null or in_array($name, $selection))
+				{
+					$this->addFile(array_merge(array('element' => $name), $file));
+				}
 			}
 		}
 	}
