@@ -141,7 +141,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			}
 			else
 			{
-				$selection =  array($this[$index]);
+				$selection =  array($this[$selection]);
 			}
 		}
 		else
@@ -191,7 +191,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			}
 			else
 			{
-				$selection =  array($this[$index]);
+				$selection =  array($this[$selection]);
 			}
 		}
 		else
