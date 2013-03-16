@@ -522,27 +522,27 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Iterator methods
 	 */
-	function rewind()
+	public function rewind()
 	{
 		$this->index = 0;
 	}
 
-	function current()
+	public function current()
 	{
 		return $this->container[$this->index];
 	}
 
-	function key()
+	public function key()
 	{
 		return $this->index;
 	}
 
-	function next()
+	public function next()
 	{
 		++$this->index;
 	}
 
-	function valid()
+	public function valid()
 	{
 		return isset($this->container[$this->index]);
 	}
