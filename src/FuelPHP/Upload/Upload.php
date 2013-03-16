@@ -307,31 +307,27 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 * Registers a Callback for a given event
 	 *
 	 * @param  string  $event  The type of the event
-	 * @param  mixed  $callback  Any valid callback, must accept a File object
+	 * @param  mixed   $callback  Any valid callback, must accept a File object
 	 *
 	 * @throws \InvalidArgumentException Not valid event or not callable second parameter
 	 * @return  void
 	 */
-	public static function register($event, $callback)
+	public function register($event, $callback)
 	{
 		// check if this is a valid event type
-		if (array_key_exists($event, $this->callbacks))
-		{
-			// check if the callback is acually callable
-			if (is_callable($callback))
-			{
-				// store it
-				$this->callbacks[$event][] = $callback;
-			}
-			else
-			{
-				throw new \InvalidArgumentException('Callback passed is not callable');
-			}
-		}
-		else
+		if ( ! isset($this->callbacks[$event]))
 		{
 			throw new \InvalidArgumentException($event.' is not a valid event');
 		}
+
+		// check if the callback is acually callable
+		if ( ! is_callable($callback))
+		{
+			throw new \InvalidArgumentException('Callback passed is not callable');
+		}
+
+		// store it
+		$this->callbacks[$event][] = $callback;
 	}
 
 	/**
@@ -375,6 +371,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			if (is_array($file['name']))
 			{
 				$data = $this->unifyFile($name, $file);
+
 				foreach ($data as $entry)
 				{
 					if ($selection === null or in_array($entry['element'], $selection))
