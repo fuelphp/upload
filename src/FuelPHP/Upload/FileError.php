@@ -59,7 +59,7 @@ class FileError
 	 * @param  int          $error  Number of the error message
 	 * @param callable|null $langCallback
 	 *
-	 * @return \FuelPHP\Upload\FileError
+	 * @return FileError
 	 */
 	public function __construct($error, $langCallback = null)
 	{
@@ -89,7 +89,7 @@ class FileError
 	/**
 	 * Return the error message
 	 *
-	 * @return  int  The error message set
+	 * @return  string  The error message set
 	 */
 	public function getMessage()
 	{
@@ -98,6 +98,8 @@ class FileError
 
 	/**
 	 * __toString magic method, will output the stored error message
+	 *
+	 * @return string
 	 */
 	public function __toString()
 	{
