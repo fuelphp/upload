@@ -232,7 +232,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 *
 	 * @param  int|string  $index  Optional array index or element name
 	 *
-	 * @return array
+	 * @return File[]
 	 */
 	public function getAllFiles($index = null)
 	{
@@ -250,7 +250,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 *
 	 * @param  int|string  $index  Optional array index or element name
 	 *
-	 * @return array
+	 * @return File[]
 	 */
 	public function getValidFiles($index = null)
 	{
@@ -279,7 +279,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 *
 	 * @param  int|string  $index  Optional array index or element name
 	 *
-	 * @return array
+	 * @return File[]
 	 */
 	public function getInvalidFiles($index = null)
 	{
@@ -361,6 +361,8 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 * Process the data in the $_FILES array, unify it, and create File objects for them
 	 *
 	 * @param  mixed  $selection  Array of fieldnames to process, or null for all uploaded files
+	 *
+	 * @return void
 	 */
 	public function processFiles(array $selection = null)
 	{
@@ -415,6 +417,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 					$data,
 					$this->unifyFile($name.'.'.$key,
 						array(
+							'filename' => null,
 							'name'     => $file['name'][$key],
 							'type'     => $file['type'][$key],
 							'tmp_name' => $file['tmp_name'][$key],
@@ -427,6 +430,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			else
 			{
 				$data[] = array(
+					'filename' => null,
 					'element'  => $name.'.'.$key,
 					'name'     => $file['name'][$key],
 					'type'     => $file['type'][$key],

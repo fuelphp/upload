@@ -132,7 +132,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	public function __set($name, $value)
 	{
 		$name = strtolower($name);
-		isset($this->container[$name]) and $this->container[$name] = $value;
+		array_key_exists($name, $this->container) and $this->container[$name] = $value;
 	}
 
 	/**
@@ -158,7 +158,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Return the error objects collected for this file upload
 	 *
-	 * @return  array
+	 * @return  FileError[]
 	 */
 	public function getErrors()
 	{
@@ -328,7 +328,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			$this->container['path'] = realpath($this->container['path']).DIRECTORY_SEPARATOR;
 
 			// was a new name for the file given?
-			if ( ! array_key_exists('filename', $this->container))
+			if (is_string($this->container['filename']) and $this->container['filename'] === '')
 			{
 				// do we need to generate a random filename?
 				if ( (bool) $this->config['randomize'])
@@ -526,7 +526,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Add a new error object to the list
 	 *
-	 * @param  array  $error  uploaded file structure
+	 * @param  int  $error  uploaded file number
 	 *
 	 * @return void
 	 */
