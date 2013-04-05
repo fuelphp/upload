@@ -328,7 +328,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			$this->container['path'] = realpath($this->container['path']).DIRECTORY_SEPARATOR;
 
 			// was a new name for the file given?
-			if (is_string($this->container['filename']) and $this->container['filename'] === '')
+			if ( ! is_string($this->container['filename']) or $this->container['filename'] === '')
 			{
 				// do we need to generate a random filename?
 				if ( (bool) $this->config['randomize'])
