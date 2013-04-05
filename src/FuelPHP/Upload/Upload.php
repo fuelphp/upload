@@ -387,7 +387,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 				// normal form element, just create a File object for this uploaded file
 				if ($selection === null or in_array($name, $selection))
 				{
-					$this->addFile(array_merge(array('element' => $name), $file));
+					$this->addFile(array_merge(array('element' => $name, 'filename' => null), $file));
 				}
 			}
 		}
