@@ -378,6 +378,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				// check if the file already exists
 				if (file_exists($this->container['path'].implode('', $filename)))
 				{
+					// generate a unique filename if needed
 					if ( (bool) $this->config['auto_rename'])
 					{
 						$counter = 0;
@@ -386,9 +387,13 @@ class File implements \ArrayAccess, \Iterator, \Countable
 							$filename[3] = '_'.++$counter;
 						}
 						while (file_exists($this->container['path'].implode('', $filename)));
+
+						// claim this generated filename before someone else does
+						touch($this->container['path'].implode('', $filename));
 					}
 					else
 					{
+						// if we can't overwrite, we've got to bail out now
 						if ( ! (bool) $this->config['overwrite'])
 						{
 							$this->addError(static::UPLOAD_ERR_DUPLICATE_FILE);
@@ -453,6 +458,14 @@ class File implements \ArrayAccess, \Iterator, \Countable
 					{
 						@chmod($this->container['path'].$this->container['filename'], $this->config['file_chmod']);
 					}
+				}
+			}
+			else
+			{
+				// remove the temporary file we've created, make sure it exists first though!
+				if (file_exists($this->container['path'].$this->container['filename']))
+				{
+					unlink($this->container['path'].$this->container['filename']);
 				}
 			}
 
