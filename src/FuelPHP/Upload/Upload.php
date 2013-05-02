@@ -95,12 +95,12 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			throw new NoFilesException('No uploaded files were found. Did you specify "enctype" in your &lt;form&gt; tag?');
 		}
 
-		// process the data in the $_FILES array
-		$this->processFiles();
-
 		// if auto-process was active, run validation on all file objects
 		if ($this->defaults['auto_process'])
 		{
+			// process all data in the $_FILES array
+			$this->processFiles();
+
 			// and validate it
 			$this->validate();
 		}
@@ -141,7 +141,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			}
 			else
 			{
-				$selection =  array($this[$index]);
+				$selection =  array($this[$selection]);
 			}
 		}
 		else
@@ -191,7 +191,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			}
 			else
 			{
-				$selection =  array($this[$index]);
+				$selection =  array($this[$selection]);
 			}
 		}
 		else
@@ -232,7 +232,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 *
 	 * @param  int|string  $index  Optional array index or element name
 	 *
-	 * @return array
+	 * @return File[]
 	 */
 	public function getAllFiles($index = null)
 	{
@@ -250,7 +250,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 *
 	 * @param  int|string  $index  Optional array index or element name
 	 *
-	 * @return array
+	 * @return File[]
 	 */
 	public function getValidFiles($index = null)
 	{
@@ -279,7 +279,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 *
 	 * @param  int|string  $index  Optional array index or element name
 	 *
-	 * @return array
+	 * @return File[]
 	 */
 	public function getInvalidFiles($index = null)
 	{
@@ -307,31 +307,27 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 * Registers a Callback for a given event
 	 *
 	 * @param  string  $event  The type of the event
-	 * @param  mixed  $callback  Any valid callback, must accept a File object
+	 * @param  mixed   $callback  Any valid callback, must accept a File object
 	 *
 	 * @throws \InvalidArgumentException Not valid event or not callable second parameter
 	 * @return  void
 	 */
-	public static function register($event, $callback)
+	public function register($event, $callback)
 	{
 		// check if this is a valid event type
-		if (array_key_exists($event, $this->callbacks))
-		{
-			// check if the callback is acually callable
-			if (is_callable($callback))
-			{
-				// store it
-				$this->callbacks[$event][] = $callback;
-			}
-			else
-			{
-				throw new \InvalidArgumentException('Callback passed is not callable');
-			}
-		}
-		else
+		if ( ! isset($this->callbacks[$event]))
 		{
 			throw new \InvalidArgumentException($event.' is not a valid event');
 		}
+
+		// check if the callback is acually callable
+		if ( ! is_callable($callback))
+		{
+			throw new \InvalidArgumentException('Callback passed is not callable');
+		}
+
+		// store it
+		$this->callbacks[$event][] = $callback;
 	}
 
 	/**
@@ -363,8 +359,12 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 
 	/**
 	 * Process the data in the $_FILES array, unify it, and create File objects for them
+	 *
+	 * @param  mixed  $selection  Array of fieldnames to process, or null for all uploaded files
+	 *
+	 * @return void
 	 */
-	protected function processFiles()
+	public function processFiles(array $selection = null)
 	{
 		// normalize the multidimensional fields in the $_FILES array
 		foreach($_FILES as $name => $file)
@@ -373,15 +373,22 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			if (is_array($file['name']))
 			{
 				$data = $this->unifyFile($name, $file);
+
 				foreach ($data as $entry)
 				{
-					$this->addFile($entry);
+					if ($selection === null or in_array($entry['element'], $selection))
+					{
+						$this->addFile($entry);
+					}
 				}
     		}
 			else
 			{
 				// normal form element, just create a File object for this uploaded file
-				$this->addFile(array_merge(array('element' => $name), $file));
+				if ($selection === null or in_array($name, $selection))
+				{
+					$this->addFile(array_merge(array('element' => $name, 'filename' => null), $file));
+				}
 			}
 		}
 	}
@@ -410,6 +417,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 					$data,
 					$this->unifyFile($name.'.'.$key,
 						array(
+							'filename' => null,
 							'name'     => $file['name'][$key],
 							'type'     => $file['type'][$key],
 							'tmp_name' => $file['tmp_name'][$key],
@@ -422,6 +430,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			else
 			{
 				$data[] = array(
+					'filename' => null,
 					'element'  => $name.'.'.$key,
 					'name'     => $file['name'][$key],
 					'type'     => $file['type'][$key],
@@ -514,27 +523,27 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Iterator methods
 	 */
-	function rewind()
+	public function rewind()
 	{
 		$this->index = 0;
 	}
 
-	function current()
+	public function current()
 	{
 		return $this->container[$this->index];
 	}
 
-	function key()
+	public function key()
 	{
 		return $this->index;
 	}
 
-	function next()
+	public function next()
 	{
 		++$this->index;
 	}
 
-	function valid()
+	public function valid()
 	{
 		return isset($this->container[$this->index]);
 	}
