@@ -499,7 +499,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				if (is_callable($callback))
 				{
 					// call the defined callback
-					$result = call_user_func($callback, $this);
+					$result = call_user_func_array($callback, array(&$this));
 
 					// and process the results. we need FileError instances only
 					foreach ((array) $result as $entry)
