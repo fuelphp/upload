@@ -77,6 +77,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 		'path_chmod'      => 0777,
 		'file_chmod'      => 0666,
 		'auto_rename'     => true,
+		'new_name'        => false,
 		'overwrite'       => false,
 	);
 
@@ -344,7 +345,13 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				}
 			}
 
-			array_key_exists('new_name', $this->config) and $this->container['filename'] = (string) $this->config['new_name'];
+			// was a hardcoded new name specified in the config?
+			if (array_key_exists('new_name', $this->config) and is_string($this->config['new_name']))
+			{
+				$new_name = pathinfo($this->config['new_name']);
+				empty($new_name['filename']) or $this->container['filename'] = $new_name['filename'];
+				empty($new_name['extension']) or $this->container['extension'] = $new_name['extension'];
+			}
 
 			// array with all filename components
 			$filename = array(

@@ -58,6 +58,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 		'path_chmod'      => 0777,
 		'file_chmod'      => 0666,
 		'auto_rename'     => true,
+		'new_name'        => false,
 		'overwrite'       => false,
 	);
 
