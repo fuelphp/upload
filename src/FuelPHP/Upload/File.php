@@ -344,6 +344,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				}
 			}
 
+			array_key_exists('new_name', $this->config) and $this->container['filename'] = (string) $this->config['new_name'];
+
 			// array with all filename components
 			$filename = array(
 				$this->config['prefix'],
