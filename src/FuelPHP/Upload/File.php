@@ -346,7 +346,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			}
 
 			// was a hardcoded new name specified in the config?
-			if (array_key_exists('new_name', $this->config) and is_string($this->config['new_name']))
+			if (array_key_exists('new_name', $this->config) and $this->config['new_name'] !== false)
 			{
 				$new_name = pathinfo($this->config['new_name']);
 				empty($new_name['filename']) or $this->container['filename'] = $new_name['filename'];
