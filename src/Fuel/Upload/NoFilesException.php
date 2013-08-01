@@ -1,8 +1,6 @@
 <?php
 /**
- * Part of the Fuel framework.
- *
- * @package    FuelPHP
+ * @package    Fuel\Upload
  * @version    2.0
  * @author     Fuel Development Team
  * @license    MIT License
@@ -10,7 +8,7 @@
  * @link       http://fuelphp.com
  */
 
-namespace FuelPHP\Upload;
+namespace Fuel\Upload;
 
 /**
  * Exception class to indicate no files where uploaded

@@ -1,4 +1,4 @@
-# FuelPHP\\Upload
+# Fuel\\Upload
 
 [![Build Status](https://travis-ci.org/fuelphp/upload.png?branch=master)](https://travis-ci.org/fuelphp/upload)
 

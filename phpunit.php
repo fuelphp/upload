@@ -1,6 +1,6 @@
 <?php
 
-namespace FuelPHP\Upload {
+namespace Fuel\Upload {
 	class Dummy {}
 }
 
