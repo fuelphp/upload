@@ -8,20 +8,20 @@
  * @link       http://fuelphp.com
  */
 
-namespace Fuel\Upload;
+namespace Fuel\Upload\Providers;
+
+use Fuel\Upload\Upload;
 
 use Fuel\Dependency\ServiceProvider;
 
 /**
- * ServicesProvider class
- *
- * Defines the services published by this namespace to the DiC
+ * FuelPHP ServiceProvider class for this package
  *
  * @package  Fuel\Upload
  *
  * @since  1.0.0
  */
-class ServicesProvider extends ServiceProvider
+class FuelServiceProvider extends ServiceProvider
 {
 	/**
 	 * @var  array  list of service names provided by this provider
@@ -36,7 +36,7 @@ class ServicesProvider extends ServiceProvider
 		// \Fuel\Upload\Upload
 		$this->register('upload', function ($dic, Array $config = null)
 		{
-			return new Upload($config);
+			return $dic->resolve('Fuel\Upload\Upload', array($config));
 		});
 
 	}
