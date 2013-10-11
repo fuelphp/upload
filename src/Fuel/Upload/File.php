@@ -380,6 +380,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			}
 
 			// if we're saving the file locally
+			$createdTempFile = false;
 			if ( ! $this->config['moveCallback'])
 			{
 				// check if the file already exists
@@ -397,6 +398,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 
 						// claim this generated filename before someone else does
 						touch($this->container['path'].implode('', $filename));
+						$createdTempFile = true;
 					}
 					else
 					{
@@ -469,8 +471,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			}
 			else
 			{
-				// remove the temporary file we've created, make sure it exists first though!
-				if (file_exists($this->container['path'].$this->container['filename']))
+				// if we're auto renaming, remove the temporary file we've created, make sure it exists first though!
+				if ($createdTempFile)
 				{
 					unlink($this->container['path'].$this->container['filename']);
 				}
