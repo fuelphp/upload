@@ -315,113 +315,122 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			{
 				$this->container['path'] = rtrim($this->config['path'], DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 			}
+
 			if ( ! is_dir($this->container['path']) and (bool) $this->config['create_path'])
 			{
 				@mkdir($this->container['path'], $this->config['path_chmod'], true);
 
 				if ( ! is_dir($this->container['path']))
 				{
-					throw new \DomainException('Can\'t save the uploaded file. Destination path specified does not exist.');
-				}
-			}
-			$this->container['path'] = realpath($this->container['path']).DIRECTORY_SEPARATOR;
-
-			// was a new name for the file given?
-			if ( ! is_string($this->container['filename']) or $this->container['filename'] === '')
-			{
-				// do we need to generate a random filename?
-				if ( (bool) $this->config['randomize'])
-				{
-					$this->container['filename'] = md5(serialize($this->container));
+					$this->addError(static::UPLOAD_ERR_MKDIR_FAILED);
 				}
 
-				// do we need to normalize the filename?
-				else
+				// update the status of this validation
+				$this->isValid = empty($this->errors);
+			}
+
+			// if the file is still valid, start processing the uploaded file
+			if ($this->isValid)
+			{
+				$this->container['path'] = realpath($this->container['path']).DIRECTORY_SEPARATOR;
+
+				// was a new name for the file given?
+				if ( ! is_string($this->container['filename']) or $this->container['filename'] === '')
 				{
-					$this->container['filename']  = $this->container['basename'];
-					(bool) $this->config['normalize'] and $this->normalize();
-				}
-			}
-
-			// was a hardcoded new name specified in the config?
-			if (array_key_exists('new_name', $this->config) and $this->config['new_name'] !== false)
-			{
-				$new_name = pathinfo($this->config['new_name']);
-				empty($new_name['filename']) or $this->container['filename'] = $new_name['filename'];
-				empty($new_name['extension']) or $this->container['extension'] = $new_name['extension'];
-			}
-
-			// array with all filename components
-			$filename = array(
-				$this->config['prefix'],
-				$this->container['filename'],
-				$this->config['suffix'],
-				'',
-				'.',
-				empty($this->config['extension']) ? $this->container['extension'] : $this->config['extension']
-			);
-
-			// remove the dot if no extension is present
-			empty($filename[5]) and $filename[4] = '';
-
-			// need to modify case?
-			switch($this->config['change_case'])
-			{
-				case 'upper':
-					$filename = array_map(function($var) { return strtoupper($var); }, $filename);
-				break;
-
-				case 'lower':
-					$filename = array_map(function($var) { return strtolower($var); }, $filename);
-				break;
-
-				default:
-				break;
-			}
-
-			// if we're saving the file locally
-			$createdTempFile = false;
-			if ( ! $this->config['moveCallback'])
-			{
-				// check if the file already exists
-				if (file_exists($this->container['path'].implode('', $filename)))
-				{
-					// generate a unique filename if needed
-					if ( (bool) $this->config['auto_rename'])
+					// do we need to generate a random filename?
+					if ( (bool) $this->config['randomize'])
 					{
-						$counter = 0;
-						do
-						{
-							$filename[3] = '_'.++$counter;
-						}
-						while (file_exists($this->container['path'].implode('', $filename)));
-
-						// claim this generated filename before someone else does
-						touch($this->container['path'].implode('', $filename));
-						$createdTempFile = true;
+						$this->container['filename'] = md5(serialize($this->container));
 					}
+
+					// do we need to normalize the filename?
 					else
 					{
-						// if we can't overwrite, we've got to bail out now
-						if ( ! (bool) $this->config['overwrite'])
+						$this->container['filename']  = $this->container['basename'];
+						(bool) $this->config['normalize'] and $this->normalize();
+					}
+				}
+
+				// was a hardcoded new name specified in the config?
+				if (array_key_exists('new_name', $this->config) and $this->config['new_name'] !== false)
+				{
+					$new_name = pathinfo($this->config['new_name']);
+					empty($new_name['filename']) or $this->container['filename'] = $new_name['filename'];
+					empty($new_name['extension']) or $this->container['extension'] = $new_name['extension'];
+				}
+
+				// array with all filename components
+				$filename = array(
+					$this->config['prefix'],
+					$this->container['filename'],
+					$this->config['suffix'],
+					'',
+					'.',
+					empty($this->config['extension']) ? $this->container['extension'] : $this->config['extension']
+				);
+
+				// remove the dot if no extension is present
+				empty($filename[5]) and $filename[4] = '';
+
+				// need to modify case?
+				switch($this->config['change_case'])
+				{
+					case 'upper':
+						$filename = array_map(function($var) { return strtoupper($var); }, $filename);
+					break;
+
+					case 'lower':
+						$filename = array_map(function($var) { return strtolower($var); }, $filename);
+					break;
+
+					default:
+					break;
+				}
+
+				// if we're saving the file locally
+				$createdTempFile = false;
+				if ( ! $this->config['moveCallback'])
+				{
+					// check if the file already exists
+					if (file_exists($this->container['path'].implode('', $filename)))
+					{
+						// generate a unique filename if needed
+						if ( (bool) $this->config['auto_rename'])
 						{
-							$this->addError(static::UPLOAD_ERR_DUPLICATE_FILE);
+							$counter = 0;
+							do
+							{
+								$filename[3] = '_'.++$counter;
+							}
+							while (file_exists($this->container['path'].implode('', $filename)));
+
+							// claim this generated filename before someone else does
+							touch($this->container['path'].implode('', $filename));
+							$createdTempFile = true;
+						}
+						else
+						{
+							// if we can't overwrite, we've got to bail out now
+							if ( ! (bool) $this->config['overwrite'])
+							{
+								$this->addError(static::UPLOAD_ERR_DUPLICATE_FILE);
+							}
 						}
 					}
 				}
+
+				// no need to store it as an array anymore
+				$this->container['filename'] = implode('', $filename);
+
+				// does the filename exceed the maximum length?
+				if ( ! empty($this->config['max_length']) and strlen($this->container['filename']) > $this->config['max_length'])
+				{
+					$this->addError(static::UPLOAD_ERR_MAX_FILENAME_LENGTH);
+				}
+
+				// update the status of this validation
+				$this->isValid = empty($this->errors);
 			}
-
-			// no need to store it as an array anymore
-			$this->container['filename'] = implode('', $filename);
-
-			// does the filename exceed the maximum length?
-			if ( ! empty($this->config['max_length']) and strlen($this->container['filename']) > $this->config['max_length'])
-			{
-				$this->addError(static::UPLOAD_ERR_MAX_FILENAME_LENGTH);
-			}
-
-			// update the status of this validation
-			$this->isValid = empty($this->errors);
 
 			// if the file is still valid, run the before save callbacks
 			if ($this->isValid)
@@ -478,15 +487,15 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				}
 			}
 
-			// validation starts, call the post-save callback
-			if ($this->isValid)
+			// call the post-save callbacks if the file was succefully saved
+			if ($this->isValid = empty($this->errors))
 			{
 				$this->runCallbacks('after_save');
 			}
 		}
 
 		// return the status of this operation
-		return empty($this->errors);
+		return $this->isValid;
 	}
 
 	/**
