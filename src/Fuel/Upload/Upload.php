@@ -236,10 +236,15 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	public function getAllFiles($index = null)
 	{
 		// return the selection
-		$selection = (func_num_args() and ! is_null($index)) ? $this[$index] : $this->container;
-
-		// make sure selection is an array
-		is_array($selection) or $selection = array($selection);
+		if ($selection = (func_num_args() and ! is_null($index)) ? $this[$index] : $this->container)
+		{
+			// make sure selection is an array
+			is_array($selection) or $selection = array($selection);
+		}
+		else
+		{
+			$selection = array();
+		}
 
 		return $selection;
 	}
@@ -263,17 +268,20 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			$selection = (func_num_args() and ! is_null($index)) ? $this[$index] : $this->container;
 		}
 
-		// make sure selection is an array
-		is_array($selection) or $selection = array($selection);
-
 		// storage for the results
 		$results = array();
 
-		// loop through all files
-		foreach ($selection as $file)
+		if ($selection)
 		{
-			// store only files that are valid
-			$file->isValid() and $results[] = $file;
+			// make sure selection is an array
+			is_array($selection) or $selection = array($selection);
+
+			// loop through all files
+			foreach ($selection as $file)
+			{
+				// store only files that are valid
+				$file->isValid() and $results[] = $file;
+			}
 		}
 
 		// return the results
@@ -307,17 +315,20 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 			$selection = (func_num_args() and ! is_null($index)) ? $this[$index] : $this->container;
 		}
 
-		// make sure selection is an array
-		is_array($selection) or $selection = array($selection);
-
 		// storage for the results
 		$results = array();
 
-		// loop through all files
-		foreach ($selection as $file)
+		if ($selection)
 		{
-			// store only files that are invalid
-			$file->isValid() or $results[] = $file;
+			// make sure selection is an array
+			is_array($selection) or $selection = array($selection);
+
+			// loop through all files
+			foreach ($selection as $file)
+			{
+				// store only files that are invalid
+				$file->isValid() or $results[] = $file;
+			}
 		}
 
 		// return the results
