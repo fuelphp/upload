@@ -12,7 +12,8 @@
 		}
 	],
 	"require": {
-		"php": ">=5.3"
+		"php": ">=5.3",
+		"ext-fileinfo": "*"
 	},
 	"require-dev": {
 		"mockery/mockery": "0.7.*"
