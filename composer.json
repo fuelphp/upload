@@ -16,7 +16,7 @@
 		"ext-fileinfo": "*"
 	},
 	"require-dev": {
-		"mockery/mockery": "0.7.*"
+		"mockery/mockery": "0.8.*"
 	},
 	"autoload": {
 		"psr-4": { "Fuel\\Upload\\": "src/" }
