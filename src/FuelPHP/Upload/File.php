@@ -441,7 +441,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				// check if file should be moved to an ftp server
 				if ($this->config['moveCallback'])
 				{
-					$moved = call_user_func($this->config['moveCallback'], $this->container['tmp_name'], $this->container['path'].$this->container['filename']);
+					$moved = call_user_func($this->config['moveCallback'], $this->container['tmp_name'], $this->container['path'].$this->container['filename'], $this);
 
 					if ( ! $moved)
 					{
