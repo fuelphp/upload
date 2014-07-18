@@ -487,9 +487,6 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				}
 			}
 
-			// update the status of this validation
-			$this->isValid = empty($this->errors);
-
 			// call the post-save callbacks if the file was succefully saved
 			if ($this->isValid = empty($this->errors))
 			{
