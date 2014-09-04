@@ -232,7 +232,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			}
 
 			// always use the more specific of the mime types available
-			if ($this->container['mimetype'] == 'application/octet-stream' and $this->container['type'] != $this->container['mimetype'])
+			if (in_array($this->container['mimetype'], array('text/plain', 'application/octet-stream')) and $this->container['type'] != $this->container['mimetype'])
 			{
 				$this->container['mimetype'] = $this->container['type'];
 			}
