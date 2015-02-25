@@ -4,39 +4,34 @@
  * @version    2.0
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2014 Fuel Development Team
+ * @copyright  2010 - 2015 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
 namespace Fuel\Upload\Providers;
 
+use League\Container\ServiceProvider;
 use Fuel\Upload\Upload;
 
-use Fuel\Dependency\ServiceProvider;
 
 /**
- * FuelPHP ServiceProvider class for this package
- *
- * @package  Fuel\Upload
- *
- * @since  1.0.0
+ * Fuel ServiceProvider class for Upload
  */
 class FuelServiceProvider extends ServiceProvider
 {
 	/**
-	 * @var  array  list of service names provided by this provider
+	 * @var array
 	 */
-	public $provides = array('upload');
+	protected $provides = array('upload');
 
 	/**
-	 * Service provider definitions
+	 * {@inheritdoc}
 	 */
-	public function provide()
+	public function register()
 	{
-		// \Fuel\Upload\Upload
-		$this->register('upload', function ($dic, Array $config = null)
+		$this->register('upload', function (array $config = null)
 		{
-			return $dic->resolve('Fuel\Upload\Upload', array($config));
+			return new Upload($config);
 		});
 
 	}

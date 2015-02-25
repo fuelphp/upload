@@ -4,7 +4,7 @@
  * @version    2.0
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2014 Fuel Development Team
+ * @copyright  2010 - 2015 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -16,17 +16,17 @@ namespace Fuel\Upload;
 class Upload implements \ArrayAccess, \Iterator, \Countable
 {
 	/**
-	 * @var  array  Container for uploaded file objects
+	 * @var array
 	 */
 	protected $container = array();
 
 	/**
-	 * @var  int  index pointer for Iterator
+	 * @var integer
 	 */
 	protected $index = 0;
 
 	/**
-	 * @var  array  Default configuration values
+	 * @var array
 	 */
 	protected $defaults = array(
 		// global settings
@@ -61,7 +61,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	);
 
 	/**
-	 * @var  array  Container for callbacks
+	 * @var array
 	 */
 	protected $callbacks = array(
 		'before_validation' => array(),
@@ -71,11 +71,9 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	);
 
 	/**
-	 * Constructor
+	 * @param array|null $config
 	 *
-	 * @param  array|null  $config  Optional array of configuration items
-	 *
-	 * @throws NoFilesException No uploaded files were found (did specify "enctype"?)
+	 * @throws NoFilesException if no uploaded files were found (did specify "enctype"?)
 	 */
 	public function __construct(array $config = null)
 	{
@@ -106,11 +104,9 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Run save on all loaded file objects
+	 * Runs save on all loaded file objects
 	 *
-	 * @param  int|string|array  $selection  Optional array index, element name or array with filter values
-	 *
-	 * @return void
+	 * @param integer|string|array $selection
 	 */
 	public function save($selection = null)
 	{
@@ -156,11 +152,9 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Run validation on all selected file objects
+	 * Runs validation on all selected file objects
 	 *
-	 * @param  int|string|array  $selection  Optional array index, element name or array with filter values
-	 *
-	 * @return void
+	 * @param integer|string|array $selection
 	 */
 	public function validate($selection = null)
 	{
@@ -206,9 +200,9 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Return a consolidated status of all uploaded files
+	 * Returns a consolidated status of all uploaded files
 	 *
-	 * @return bool
+	 * @return boolean
 	 */
 	public function isValid()
 	{
@@ -227,9 +221,9 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Return the list of uploaded files
+	 * Returns the list of uploaded files
 	 *
-	 * @param  int|string  $index  Optional array index or element name
+	 * @param integer|string $index
 	 *
 	 * @return File[]
 	 */
@@ -250,9 +244,9 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Return the list of uploaded files that valid
+	 * Returns the list of uploaded files that valid
 	 *
-	 * @param  int|string  $index  Optional array index or element name
+	 * @param integer|string $index
 	 *
 	 * @return File[]
 	 */
@@ -297,9 +291,9 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Return the list of uploaded files that invalid
+	 * Returns the list of uploaded files that invalid
 	 *
-	 * @param  int|string  $index  Optional array index or element name
+	 * @param integer|string $index
 	 *
 	 * @return File[]
 	 */
@@ -344,13 +338,12 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Registers a Callback for a given event
+	 * Registers a callback for a given event
 	 *
-	 * @param  string  $event  The type of the event
-	 * @param  mixed   $callback  Any valid callback, must accept a File object
+	 * @param string $event
+	 * @param mixed  $callback
 	 *
-	 * @throws \InvalidArgumentException Not valid event or not callable second parameter
-	 * @return  void
+	 * @throws \InvalidArgumentException if not valid event or not callable second parameter
 	 */
 	public function register($event, $callback)
 	{
@@ -371,12 +364,10 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Set the configuration for this file
+	 * Sets the configuration for this file
 	 *
-	 * @param  string|array  $item  name of the configuration item to set, or an array of configuration items
-	 * @param  mixed  $value  if $name is an item name, this holds the configuration values for that item
-	 *
-	 * @return  void
+	 * @param string|array $item
+	 * @param mixed        $value
 	 */
 	public function setConfig($item, $value = null)
 	{
@@ -398,11 +389,9 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Process the data in the $_FILES array, unify it, and create File objects for them
+	 * Processes the data in the $_FILES array, unify it, and create File objects for them
 	 *
-	 * @param  mixed  $selection  Array of fieldnames to process, or null for all uploaded files
-	 *
-	 * @return void
+	 * @param mixed $selection
 	 */
 	public function processFiles(array $selection = null)
 	{
@@ -434,12 +423,12 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Convert the silly different $_FILE structures to a flattened array
+	 * Converts the silly different $_FILE structures to a flattened array
 	 *
-	 * @param  string  $name  key name of the file
-	 * @param  array   $file  $_FILE array structure
+	 * @param string $name
+	 * @param array  $file
 	 *
-	 * @return  array  unified array file uploaded files
+	 * @return array
 	 */
 	protected function unifyFile($name, $file)
 	{
@@ -485,9 +474,9 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Add a new uploaded file structure to the container
+	 * Adds a new uploaded file structure to the container
 	 *
-	 * @param  array  $entry  uploaded file structure
+	 * @param array $entry
 	 */
 	protected function addFile(array $entry)
 	{

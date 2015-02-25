@@ -1,7 +1,6 @@
 {
 	"name": "fuelphp/upload",
-	"type": "library",
-	"description": "Uploaded file processing.",
+	"description": "Process uploaded files",
 	"keywords": ["Upload", "File uploads"],
 	"homepage": "https://github.com/fuelphp/upload",
 	"license": "MIT",
@@ -16,9 +15,16 @@
 		"ext-fileinfo": "*"
 	},
 	"require-dev": {
-		"mockery/mockery": "0.8.*"
+		"codeception/codeception": "~2.0"
 	},
 	"autoload": {
-		"psr-4": { "Fuel\\Upload\\": "src/" }
+		"psr-4": {
+			"Fuel\\Upload\\": "src/"
+		}
+	},
+	"extra": {
+		"branch-alias": {
+			"dev-master": "2.0-dev"
+		}
 	}
 }

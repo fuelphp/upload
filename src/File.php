@@ -4,7 +4,7 @@
  * @version    2.0
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2014 Fuel Development Team
+ * @copyright  2010 - 2015 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -32,22 +32,22 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	const UPLOAD_ERR_EXTERNAL_MOVE_FAILED = 112;
 
 	/**
-	 * @var  array  Container for uploaded file objects
+	 * @var array
 	 */
 	protected $container = array();
 
 	/**
-	 * @var  int  index pointer for Iterator
+	 * @var integer
 	 */
 	protected $index = 0;
 
 	/**
-	 * @var  array  Container for validation errors
+	 * @var array
 	 */
 	protected $errors = array();
 
 	/**
-	 * @var  array  Configuration values
+	 * @var array
 	 */
 	protected $config = array(
 		'langCallback'    => null,
@@ -80,25 +80,23 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	);
 
 	/**
-	 * @var  bool  Flag to indicate if validation has run on this object
+	 * @var boolean
 	 */
 	protected $isValidated = false;
 
 	/**
-	 * @var  bool  Flag to indicate the result of the validation run
+	 * @var boolean
 	 */
 	protected $isValid = false;
 
 	/**
-	 * @var  array  Container for callbacks
+	 * @var array
 	 */
 	protected $callbacks = array();
 
 	/**
-	 * Constructor
-	 *
-	 * @param  array       $file  Array with unified information about the file uploaded
-	 * @param  array|null  $callbacks
+	 * @param array       $file
+	 * @param array|null  $callbacks
 	 */
 	public function __construct(array $file, &$callbacks = array())
 	{
@@ -112,9 +110,9 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Magic getter, gives read access to all elements in the file container
 	 *
-	 * @param  string  $name  name of the container item to get
+	 * @param string $name
 	 *
-	 * @return  mixed  value of the item, or null if the item does not exist
+	 * @return mixed
 	 */
 	public function __get($name)
 	{
@@ -125,8 +123,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Magic setter, gives write access to all elements in the file container
 	 *
-	 * @param  string  $name  name of the container item to set
-	 * @param  mixed  $value  value to set it to
+	 * @param string $name
+	 * @param mixed  $value
 	 */
 	public function __set($name, $value)
 	{
@@ -135,9 +133,9 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Return the validation state of this object
+	 * Returns the validation state of this object
 	 *
-	 * @return  bool
+	 * @return boolean
 	 */
 	public function isValidated()
 	{
@@ -145,9 +143,9 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Return the state of this object
+	 * Returns the state of this object
 	 *
-	 * @return  bool
+	 * @return  boolean
 	 */
 	public function isValid()
 	{
@@ -155,7 +153,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Return the error objects collected for this file upload
+	 * Returns the error objects collected for this file upload
 	 *
 	 * @return  FileError[]
 	 */
@@ -165,12 +163,10 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Set the configuration for this file
+	 * Sets the configuration for this file
 	 *
-	 * @param  string|array  $item  name of the configuration item to set, or an array of configuration items
-	 * @param  mixed         $value if $name is an item name, this holds the configuration values for that item
-	 *
-	 * @return  void
+	 * @param string|array  $item
+	 * @param mixed         $value
 	 */
 	public function setConfig($item, $value = null)
 	{
@@ -185,9 +181,9 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Run validation on the uploaded file, based on the config being loaded
+	 * Runs validation on the uploaded file, based on the config being loaded
 	 *
-	 * @return  bool
+	 * @return boolean
 	 */
 	public function validate()
 	{
@@ -299,11 +295,11 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Save the uploaded file
+	 * Saves the uploaded file
 	 *
-	 * @throws \DomainException Destination path specified does not exist
+	 * @return boolean
 	 *
-	 * @return  bool
+	 * @throws \DomainException if destination path specified does not exist
 	 */
 	public function save()
 	{
@@ -499,11 +495,9 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Run callbacks of he defined type
+	 * Runs callbacks of he defined type
 	 *
-	 * @param callable $type Valid callable callback
-	 *
-	 * @return void
+	 * @param callable $type
 	 */
 	protected function runCallbacks($type)
 	{
@@ -536,9 +530,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Convert a filename into a normalized name. only outputs 7 bit ASCII characters.
-	 *
-	 * @return void
+	 * Converts a filename into a normalized name. only outputs 7 bit ASCII characters.
 	 */
 	protected function normalize()
 	{
@@ -555,11 +547,9 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	}
 
 	/**
-	 * Add a new error object to the list
+	 * Adds a new error object to the list
 	 *
-	 * @param  int  $error  uploaded file number
-	 *
-	 * @return void
+	 * @param integer $error
 	 */
 	protected function addError($error)
 	{
