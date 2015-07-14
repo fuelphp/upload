@@ -303,6 +303,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	 */
 	public function save()
 	{
+		$tempfileCreated = false;
+
 		// we can only save files marked as valid
 		if ($this->isValid)
 		{
@@ -323,163 +325,154 @@ class File implements \ArrayAccess, \Iterator, \Countable
 
 				// update the status of this validation
 				$this->isValid = empty($this->errors);
-			}
 
-			// if the file is still valid, start processing the uploaded file
-			if ($this->isValid)
-			{
-				$this->container['path'] = realpath($this->container['path']).DIRECTORY_SEPARATOR;
-
-				// was a new name for the file given?
-				if ( ! is_string($this->container['filename']) or $this->container['filename'] === '')
+				// if the file is still valid, start processing the uploaded file
+				if ($this->isValid)
 				{
-					// do we need to generate a random filename?
-					if ( (bool) $this->config['randomize'])
+					$this->container['path'] = realpath($this->container['path']).DIRECTORY_SEPARATOR;
+
+					// was a new name for the file given?
+					if ( ! is_string($this->container['filename']) or $this->container['filename'] === '')
 					{
-						$this->container['filename'] = md5(serialize($this->container));
-					}
-
-					// do we need to normalize the filename?
-					else
-					{
-						$this->container['filename']  = $this->container['basename'];
-						(bool) $this->config['normalize'] and $this->normalize();
-					}
-				}
-
-				// was a hardcoded new name specified in the config?
-				if (array_key_exists('new_name', $this->config) and $this->config['new_name'] !== false)
-				{
-					$new_name = pathinfo($this->config['new_name']);
-					empty($new_name['filename']) or $this->container['filename'] = $new_name['filename'];
-					empty($new_name['extension']) or $this->container['extension'] = $new_name['extension'];
-				}
-
-				// array with all filename components
-				$filename = array(
-					$this->config['prefix'],
-					$this->container['filename'],
-					$this->config['suffix'],
-					'',
-					'.',
-					empty($this->config['extension']) ? $this->container['extension'] : $this->config['extension']
-				);
-
-				// remove the dot if no extension is present
-				empty($filename[5]) and $filename[4] = '';
-
-				// need to modify case?
-				switch($this->config['change_case'])
-				{
-					case 'upper':
-						$filename = array_map(function($var) { return strtoupper($var); }, $filename);
-					break;
-
-					case 'lower':
-						$filename = array_map(function($var) { return strtolower($var); }, $filename);
-					break;
-
-					default:
-					break;
-				}
-
-				// if we're saving the file locally
-				$createdTempFile = false;
-				if ( ! $this->config['moveCallback'])
-				{
-					// check if the file already exists
-					if (file_exists($this->container['path'].implode('', $filename)))
-					{
-						// generate a unique filename if needed
-						if ( (bool) $this->config['auto_rename'])
+						// do we need to generate a random filename?
+						if ( (bool) $this->config['randomize'])
 						{
-							$counter = 0;
-							do
-							{
-								$filename[3] = '_'.++$counter;
-							}
-							while (file_exists($this->container['path'].implode('', $filename)));
-
-							// claim this generated filename before someone else does
-							touch($this->container['path'].implode('', $filename));
-							$createdTempFile = true;
+							$this->container['filename'] = md5(serialize($this->container));
 						}
+
+						// do we need to normalize the filename?
 						else
 						{
-							// if we can't overwrite, we've got to bail out now
-							if ( ! (bool) $this->config['overwrite'])
+							$this->container['filename']  = $this->container['basename'];
+							(bool) $this->config['normalize'] and $this->normalize();
+						}
+					}
+
+					// was a hardcoded new name specified in the config?
+					if (array_key_exists('new_name', $this->config) and $this->config['new_name'] !== false)
+					{
+						$new_name = pathinfo($this->config['new_name']);
+						empty($new_name['filename']) or $this->container['filename'] = $new_name['filename'];
+						empty($new_name['extension']) or $this->container['extension'] = $new_name['extension'];
+					}
+
+					// array with all filename components
+					$filename = array(
+						$this->config['prefix'],
+						$this->container['filename'],
+						$this->config['suffix'],
+						'',
+						'.',
+						empty($this->config['extension']) ? $this->container['extension'] : $this->config['extension']
+					);
+
+					// remove the dot if no extension is present
+					empty($filename[5]) and $filename[4] = '';
+
+					// need to modify case?
+					switch($this->config['change_case'])
+					{
+						case 'upper':
+							$filename = array_map(function($var) { return strtoupper($var); }, $filename);
+						break;
+
+						case 'lower':
+							$filename = array_map(function($var) { return strtolower($var); }, $filename);
+						break;
+
+						default:
+						break;
+					}
+
+					// if we're saving the file locally
+					if ( ! $this->config['moveCallback'])
+					{
+						// check if the file already exists
+						if (file_exists($this->container['path'].implode('', $filename)))
+						{
+							// generate a unique filename if needed
+							if ( (bool) $this->config['auto_rename'])
 							{
-								$this->addError(static::UPLOAD_ERR_DUPLICATE_FILE);
+								$counter = 0;
+								do
+								{
+									$filename[3] = '_'.++$counter;
+								}
+								while (file_exists($this->container['path'].implode('', $filename)));
+
+								// claim this generated filename before someone else does
+								touch($this->container['path'].implode('', $filename));
+								$tempfileCreated = true;
+							}
+							else
+							{
+								// if we can't overwrite, we've got to bail out now
+								if ( ! (bool) $this->config['overwrite'])
+								{
+									$this->addError(static::UPLOAD_ERR_DUPLICATE_FILE);
+								}
 							}
 						}
 					}
-				}
 
-				// no need to store it as an array anymore
-				$this->container['filename'] = implode('', $filename);
+					// no need to store it as an array anymore
+					$this->container['filename'] = implode('', $filename);
 
-				// does the filename exceed the maximum length?
-				if ( ! empty($this->config['max_length']) and strlen($this->container['filename']) > $this->config['max_length'])
-				{
-					$this->addError(static::UPLOAD_ERR_MAX_FILENAME_LENGTH);
-				}
-
-				// update the status of this validation
-				$this->isValid = empty($this->errors);
-			}
-
-			// if the file is still valid, run the before save callbacks
-			if ($this->isValid)
-			{
-				// validation starts, call the pre-save callbacks
-				$this->runCallbacks('before_save');
-
-				// recheck the path, it might have been altered by a callback
-				if ($this->isValid and ! is_dir($this->container['path']) and (bool) $this->config['create_path'])
-				{
-					@mkdir($this->container['path'], $this->config['path_chmod'], true);
-
-					if ( ! is_dir($this->container['path']))
+					// does the filename exceed the maximum length?
+					if ( ! empty($this->config['max_length']) and strlen($this->container['filename']) > $this->config['max_length'])
 					{
-						$this->addError(static::UPLOAD_ERR_MKDIR_FAILED);
+						$this->addError(static::UPLOAD_ERR_MAX_FILENAME_LENGTH);
 					}
-				}
 
-				// update the status of this validation
-				$this->isValid = empty($this->errors);
-			}
+					// update the status of this validation
+					$this->isValid = empty($this->errors);
 
-			// if the file is still valid, move it
-			if ($this->isValid)
-			{
-				// check if file should be moved to an ftp server
-				if ($this->config['moveCallback'])
-				{
-					$moved = call_user_func($this->config['moveCallback'], $this->container['tmp_name'], $this->container['path'].$this->container['filename']);
+					// if the file is still valid, run the before save callbacks
+					if ($this->isValid)
+					{
+						// validation starts, call the pre-save callbacks
+						$this->runCallbacks('before_save');
 
-					if ( ! $moved)
-					{
-						$this->addError(static::UPLOAD_ERR_EXTERNAL_MOVE_FAILED);
+						// recheck the path, it might have been altered by a callback
+						if ($this->isValid and ! is_dir($this->container['path']) and (bool) $this->config['create_path'])
+						{
+							@mkdir($this->container['path'], $this->config['path_chmod'], true);
+
+							if ( ! is_dir($this->container['path']))
+							{
+								$this->addError(static::UPLOAD_ERR_MKDIR_FAILED);
+							}
+						}
+
+						// update the status of this validation
+						$this->isValid = empty($this->errors);
+
+						// if the file is still valid, move it
+						if ($this->isValid)
+						{
+							// check if file should be moved to an ftp server
+							if ($this->config['moveCallback'])
+							{
+								$moved = call_user_func($this->config['moveCallback'], $this->container['tmp_name'], $this->container['path'].$this->container['filename']);
+
+								if ( ! $moved)
+								{
+									$this->addError(static::UPLOAD_ERR_EXTERNAL_MOVE_FAILED);
+								}
+							}
+							else
+							{
+								if( ! @move_uploaded_file($this->container['tmp_name'], $this->container['path'].$this->container['filename']))
+								{
+									$this->addError(static::UPLOAD_ERR_MOVE_FAILED);
+								}
+								else
+								{
+									@chmod($this->container['path'].$this->container['filename'], $this->config['file_chmod']);
+								}
+							}
+						}
 					}
-				}
-				else
-				{
-					if( ! @move_uploaded_file($this->container['tmp_name'], $this->container['path'].$this->container['filename']))
-					{
-						$this->addError(static::UPLOAD_ERR_MOVE_FAILED);
-					}
-					else
-					{
-						@chmod($this->container['path'].$this->container['filename'], $this->config['file_chmod']);
-					}
-				}
-			}
-			else
-			{
-				// if we're auto renaming, remove the temporary file we've created, make sure it exists first though!
-				if ($createdTempFile)
-				{
-					unlink($this->container['path'].$this->container['filename']);
 				}
 			}
 
@@ -487,6 +480,12 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			if ($this->isValid = empty($this->errors))
 			{
 				$this->runCallbacks('after_save');
+			}
+
+			// if there was an error and we've created a temp file, make sure to remove it
+			elseif ($tempfileCreated)
+			{
+				unlink($this->container['path'].$this->container['filename']);
 			}
 		}
 
