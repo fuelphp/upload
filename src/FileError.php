@@ -39,6 +39,7 @@ class FileError
 		110 => 'A file with the name of the uploaded file already exists',
 		111 => 'Unable to create the file\'s destination directory',
 		112 => 'Unable to upload the file to the destination using FTP',
+		113 => 'The configured destination path does not exist',
 	);
 
 	/**

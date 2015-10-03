@@ -30,6 +30,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	const UPLOAD_ERR_DUPLICATE_FILE       = 110;
 	const UPLOAD_ERR_MKDIR_FAILED         = 111;
 	const UPLOAD_ERR_EXTERNAL_MOVE_FAILED = 112;
+	const UPLOAD_ERR_NO_PATH              = 113;
 
 	/**
 	 * @var array
@@ -309,14 +310,22 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				$this->container['path'] = rtrim($this->config['path'], DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 			}
 
-			// create the path if needed
-			if ( ! is_dir($this->container['path']) and (bool) $this->config['create_path'])
+			// if the path does not exist
+			if ( ! is_dir($this->container['path']))
 			{
-				@mkdir($this->container['path'], $this->config['path_chmod'], true);
-
-				if ( ! is_dir($this->container['path']))
+				// do we need to create it?
+				if ((bool) $this->config['create_path'])
 				{
-					$this->addError(static::UPLOAD_ERR_MKDIR_FAILED);
+					@mkdir($this->container['path'], $this->config['path_chmod'], true);
+
+					if ( ! is_dir($this->container['path']))
+					{
+						$this->addError(static::UPLOAD_ERR_MKDIR_FAILED);
+					}
+				}
+				else
+				{
+					$this->addError(static::UPLOAD_ERR_NO_PATH);
 				}
 			}
 
