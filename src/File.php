@@ -229,12 +229,6 @@ class File implements \ArrayAccess, \Iterator, \Countable
 				$this->addError(UPLOAD_ERR_NO_FILE);
 			}
 
-			// always use the more specific of the mime types available
-			if (in_array($this->container['mimetype'], array('text/plain', 'application/octet-stream')) and $this->container['type'] != $this->container['mimetype'])
-			{
-				$this->container['mimetype'] = $this->container['type'];
-			}
-
 			// make sure it contains something valid
 			if (empty($this->container['mimetype']) or strpos($this->container['mimetype'], '/') === false)
 			{
