@@ -303,6 +303,10 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			{
 				$this->container['path'] = rtrim($this->config['path'], DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 			}
+			// path is not exists and create_path is disable 
+			if ( !is_dir($this->container['path']) and (bool) !$this->config['create_path']){
+            	throw new \DomainException('Can\'t save the uploaded file. Destination path specified does not exist.');
+			}
 
 			// if the path does not exist
 			if ( ! is_dir($this->container['path']))
