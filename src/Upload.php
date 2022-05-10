@@ -492,7 +492,8 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Countable methods
 	 */
-	public function count()
+	#[\ReturnTypeWillChange]
+	public function count()/*: int*/
 	{
 		return count($this->container);
 	}
@@ -500,12 +501,14 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * ArrayAccess methods
 	 */
-	public function offsetExists($offset)
+	#[\ReturnTypeWillChange]
+	public function offsetExists(/*mixed */$offset)/*: bool*/
 	{
 		return isset($this->container[$offset]);
 	}
 
-	public function offsetGet($offset)
+	#[\ReturnTypeWillChange]
+	public function offsetGet(/*mixed */$offset)/*: mixed*/
 	{
 		// if the requested key is alphanumeric, do a search on element name
 		if (is_string($offset))
@@ -539,12 +542,14 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 		return null;
 	}
 
-	public function offsetSet($offset, $value)
+	#[\ReturnTypeWillChange]
+	public function offsetSet(/*mixed */$offset, /*mixed */$value)/*: void*/
 	{
 		throw new \OutOfBoundsException('An Upload Files instance is read-only, its contents can not be altered');
 	}
 
-	public function offsetUnset($offset)
+	#[\ReturnTypeWillChange]
+	public function offsetUnset(/*mixed */$offset)/*: void*/
 	{
 		throw new \OutOfBoundsException('An Upload Files instance is read-only, its contents can not be altered');
 	}
@@ -552,27 +557,32 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Iterator methods
 	 */
-	public function rewind()
+	#[\ReturnTypeWillChange]
+	public function rewind()/*: void*/
 	{
 		$this->index = 0;
 	}
 
-	public function current()
+	#[\ReturnTypeWillChange]
+	public function current()/*: mixed*/
 	{
 		return $this->container[$this->index];
 	}
 
-	public function key()
+	#[\ReturnTypeWillChange]
+	public function key()/*: mixed*/
 	{
 		return $this->index;
 	}
 
-	public function next()
+	#[\ReturnTypeWillChange]
+	public function next()/*: void*/
 	{
 		++$this->index;
 	}
 
-	public function valid()
+	#[\ReturnTypeWillChange]
+	public function valid()/*: bool*/
 	{
 		return isset($this->container[$this->index]);
 	}

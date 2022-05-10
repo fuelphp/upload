@@ -551,7 +551,8 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Countable methods
 	 */
-	public function count()
+	#[\ReturnTypeWillChange]
+	public function count()/*: int*/
 	{
 		return count($this->container);
 	}
@@ -559,22 +560,26 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * ArrayAccess methods
 	 */
-	public function offsetExists($offset)
+	#[\ReturnTypeWillChange]
+	public function offsetExists(/*mixed */$offset)/*: bool*/
 	{
 		return isset($this->container[$offset]);
 	}
 
-	public function offsetGet($offset)
+	#[\ReturnTypeWillChange]
+	public function offsetGet(/*mixed */$offset)/*: mixed*/
 	{
 		return $this->container[$offset];
 	}
 
-	public function offsetSet($offset, $value)
+	#[\ReturnTypeWillChange]
+	public function offsetSet(/*mixed */$offset, /*mixed */$value)/*: void*/
 	{
 		$this->container[$offset] = $value;
 	}
 
-	public function offsetUnset($offset)
+	#[\ReturnTypeWillChange]
+	public function offsetUnset(/*mixed */$offset)/*: void*/
 	{
 		throw new \OutOfBoundsException('You can not unset a data element of an Upload File instance');
 	}
@@ -582,27 +587,32 @@ class File implements \ArrayAccess, \Iterator, \Countable
 	/**
 	 * Iterator methods
 	 */
-	function rewind()
+	#[\ReturnTypeWillChange]
+	public function rewind()/*: void*/
 	{
 		return reset($this->container);
 	}
 
-	function current()
+	#[\ReturnTypeWillChange]
+	public function current()/*: mixed*/
 	{
 		return current($this->container);
 	}
 
-	function key()
+	#[\ReturnTypeWillChange]
+	public function key()/*: mixed*/
 	{
 		return key($this->container);
 	}
 
-	function next()
+	#[\ReturnTypeWillChange]
+	public function next()/*: void*/
 	{
 		return next($this->container);
 	}
 
-	function valid()
+	#[\ReturnTypeWillChange]
+	public function valid()/*: bool*/
 	{
 		return key($this->container) !== null;
 	}
