@@ -75,8 +75,14 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 *
 	 * @throws NoFilesException if no uploaded files were found (did specify "enctype"?)
 	 */
-	public function __construct(array $config = null)
+	public function __construct($config = null)
 	{
+		// input validation
+		if ( ! is_array($config) and ! is_null($config))
+		{
+			trigger_error('Uncaught TypeError: '.__METHOD__ .'(): Argument #1 ($config) must be of type ?array, '.gettype($config).' given, called in '.__FILE__.' on line '.__LINE__, E_USER_WARNING);
+		}
+
 		// override defaults if needed
 		if (is_array($config))
 		{
@@ -393,8 +399,14 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 	 *
 	 * @param mixed $selection
 	 */
-	public function processFiles(array $selection = null)
+	public function processFiles($selection = null)
 	{
+		// input validation
+		if ( ! is_array($selection) and ! is_null($selection))
+		{
+			trigger_error('Uncaught TypeError: '.__METHOD__ .'(): Argument #1 ($selection) must be of type ?array, '.gettype($selection).' given, called in '.__FILE__.' on line '.__LINE__, E_USER_WARNING);
+		}
+
 		// normalize the multidimensional fields in the $_FILES array
 		foreach($_FILES as $name => $file)
 		{
