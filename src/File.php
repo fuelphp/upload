@@ -67,6 +67,7 @@ class File implements \ArrayAccess, \Iterator, \Countable
 		'suffix'          => '',
 		'extension'       => '',
 		'randomize'       => false,
+		'dir_depth'       => 0,
 		'normalize'       => false,
 		'normalize_separator' => '_',
 		'change_case'     => false,
@@ -327,6 +328,12 @@ class File implements \ArrayAccess, \Iterator, \Countable
 			if ($this->isValid)
 			{
 				$this->container['path'] = realpath($this->container['path']).DIRECTORY_SEPARATOR;
+
+				// need to store the file in a randomized sub directorys?
+				if ( (int)  $this->config['dir_depth'] > 0)
+				{
+					$this->container['path'] .= substr(md5(uniqid(mt_rand(),true)), 0, 2).DIRECTORY_SEPARATOR;
+				}
 
 				// was a new name for the file given?
 				if ( ! is_string($this->container['filename']) or $this->container['filename'] === '')

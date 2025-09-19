@@ -47,6 +47,7 @@ class Upload implements \ArrayAccess, \Iterator, \Countable
 		'suffix'          => '',
 		'extension'       => '',
 		'randomize'       => false,
+		'dir_depth'       => 0,
 		'normalize'       => false,
 		'normalize_separator' => '_',
 		'change_case'     => false,
